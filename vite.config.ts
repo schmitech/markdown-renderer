@@ -29,7 +29,7 @@ export default defineConfig({
         },
         assetFileNames: (assetInfo) => {
           // Keep CSS file names consistent
-          if (assetInfo.name === 'style.css') {
+          if (assetInfo.name?.endsWith('.css')) {
             return 'MarkdownStyles.css';
           }
           return assetInfo.name || '';
