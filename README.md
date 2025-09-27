@@ -22,8 +22,10 @@ npm install @schmitech/markdown-renderer
 ### React setup
 
 In React applications (Vite, CRA, Next.js, etc.) simply import the component. The
-library ships its base `.markdown-content` styles automatically. If you prefer to
-manage styles yourself, you can also import them explicitly with
+library injects its base `.markdown-content` styles automatically when it first
+loads. If your setup performs server-side rendering or you need manual control,
+you can call the exported `ensureStylesInjected()` helper explicitly. Consumers
+who prefer to handle CSS separately can still import
 `import '@schmitech/markdown-renderer/styles';`.
 
 ### Basic Usage
@@ -101,6 +103,10 @@ Or reference the built CSS directly from your own stylesheets:
 ```css
 @import '@schmitech/markdown-renderer/dist/MarkdownStyles.css';
 ```
+
+If you are rendering on the server (Next.js, Remix, etc.) you may want to call
+`ensureStylesInjected()` in a `useEffect` on the client to guarantee the base
+stylesheet is present.
 
 To customize the look, add your own selectors that target the generated
 `markdown-content` wrapper:
