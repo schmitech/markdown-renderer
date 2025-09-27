@@ -1,6 +1,6 @@
 {
   "name": "@schmitech/markdown-renderer",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Shared markdown renderer component with math and chemistry support",
   "type": "module",
   "main": "./dist/markdown-renderer.umd.js",
