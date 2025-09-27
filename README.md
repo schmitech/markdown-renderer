@@ -19,11 +19,19 @@ npm install @schmitech/markdown-renderer
 
 ## Usage
 
+### React setup
+
+In React applications (Vite, CRA, Next.js, etc.) simply import the component. The
+library ships its base `.markdown-content` styles automatically. If you prefer to
+manage styles yourself, you can also import them explicitly with
+`import '@schmitech/markdown-renderer/styles';`.
+
 ### Basic Usage
 
 ```tsx
 import { MarkdownRenderer } from '@schmitech/markdown-renderer';
-import '@schmitech/markdown-renderer/styles';
+// Base styles are injected automatically. If you want explicit control, add:
+// import '@schmitech/markdown-renderer/styles';
 
 function MyComponent() {
   const content = `
@@ -42,7 +50,6 @@ And chemistry: $\\ce{H2O}$
 
 ```tsx
 import { MarkdownRenderer } from '@schmitech/markdown-renderer';
-import '@schmitech/markdown-renderer/styles';
 
 function MyComponent() {
   return (
@@ -81,16 +88,27 @@ function MyComponent() {
 
 ## Styling
 
-Import the default styles:
+The base stylesheet loads automatically when you import the library. You can also
+pull it in manually if your bundler requires explicit CSS imports or you need to
+override the defaults in a dedicated file:
 
 ```tsx
 import '@schmitech/markdown-renderer/styles';
 ```
 
-Or import the CSS file directly:
+Or reference the built CSS directly from your own stylesheets:
 
 ```css
 @import '@schmitech/markdown-renderer/dist/MarkdownStyles.css';
+```
+
+To customize the look, add your own selectors that target the generated
+`markdown-content` wrapper:
+
+```css
+.markdown-content h1 {
+  color: #7c3aed;
+}
 ```
 
 ## License

@@ -1,4 +1,5 @@
 // Main entry point for the markdown-renderer package
+import './MarkdownStyles.css';
 export {
   MarkdownRenderer,
   MarkdownLink,
