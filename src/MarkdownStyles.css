@@ -93,6 +93,7 @@
 /* Table wrapper for horizontal scrolling */
 .markdown-content {
   position: relative;
+  overflow: auto;
 }
 
 /* Tables - with horizontal scroll wrapper */
@@ -100,20 +101,18 @@
   border-collapse: collapse;
   font-size: 0.75em;
   margin: 12px 0;
-  table-layout: fixed;
-  width: 100%;
+  table-layout: auto; /* Changed from fixed to auto for better column sizing */
+  width: max-content; /* Allow table to expand beyond container width */
+  min-width: 100%; /* But at least fill the container */
   overflow-x: auto;
   overflow-y: hidden;
-  max-width: 100%;
   -webkit-overflow-scrolling: touch;
-  white-space: nowrap; /* Force table to extend horizontally */
 }
 
 /* Table body structure */
 .markdown-content tbody,
 .markdown-content thead {
   width: auto; /* Let it size based on content */
-  min-width: 100%; /* But at least fill the container */
 }
 
 .markdown-content thead { 
@@ -124,17 +123,29 @@
 .markdown-content td {
   padding: 6px 10px;
   border: 1px solid rgba(0, 0, 0, 0.2);
-  white-space: nowrap; /* Keep content on one line for horizontal scroll */
   line-height: 1.4;
   vertical-align: top;
-  min-width: fit-content; /* Cells expand to fit their content */
 }
 
-/* For cells with long content, allow controlled wrapping */
+/* Header cells - allow expansion with constraints */
+.markdown-content th {
+  font-weight: 600; 
+  text-align: left;
+  background-color: rgba(0, 0, 0, 0.05);
+  white-space: normal; /* Allow wrapping for long header text */
+  min-width: 120px; /* Minimum width for headers */
+  max-width: 250px; /* Maximum width before wrapping */
+  word-break: break-word; /* Break long words if needed */
+  hyphens: auto; /* Enable hyphenation for better text breaking */
+}
+
+/* Data cells - more flexible */
 .markdown-content td {
-  max-width: 300px; /* Maximum width before forcing wrap */
-  white-space: normal; /* Allow wrapping for long content */
-  word-break: keep-all; /* But don't break words like bank_transfer */
+  white-space: normal; /* Allow wrapping for long cell text */
+  min-width: 80px; /* Minimum width for data cells */
+  max-width: 200px; /* Maximum width before wrapping */
+  word-break: break-word; /* Break long words if needed */
+  hyphens: auto; /* Enable hyphenation for better text breaking */
 }
 
 /* Special handling for URLs/emails - more aggressive breaking */
@@ -142,13 +153,7 @@
 .markdown-content td:has(a) {
   word-break: break-all;
   display: inline-block;
-  max-width: 250px;
-}
-
-.markdown-content th { 
-  font-weight: 600; 
-  text-align: left;
-  background-color: rgba(0, 0, 0, 0.05);
+  max-width: 180px; /* Adjusted for new cell sizing */
 }
 
 /* Make tables more compact on smaller chat areas */
