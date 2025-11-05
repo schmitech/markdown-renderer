@@ -561,6 +561,25 @@ const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) => {
   const colors = config.colors || DEFAULT_COLORS;
   const height = config.height || 300;
 
+  // Custom tooltip styling for better readability
+  const tooltipStyle = {
+    backgroundColor: '#ffffff',
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+    padding: '8px',
+    color: '#000000',
+  };
+
+  const tooltipLabelStyle = {
+    color: '#000000',
+    fontWeight: 600,
+    marginBottom: '4px',
+  };
+
+  const tooltipItemStyle = {
+    color: '#000000',
+  };
+
   return (
     <div className="graph-container chart-container" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
       {config.title && <h4 style={{ textAlign: 'center', marginBottom: '12px', marginTop: 0 }}>{config.title}</h4>}
@@ -570,7 +589,11 @@ const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) => {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey={config.xKey || 'name'} />
             <YAxis />
-            <Tooltip />
+            <Tooltip
+              contentStyle={tooltipStyle}
+              labelStyle={tooltipLabelStyle}
+              itemStyle={tooltipItemStyle}
+            />
             <Legend />
             {config.dataKeys?.map((key, idx) => (
               <Bar key={key} dataKey={key} fill={colors[idx % colors.length]} />
@@ -582,7 +605,11 @@ const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) => {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey={config.xKey || 'name'} />
             <YAxis />
-            <Tooltip />
+            <Tooltip
+              contentStyle={tooltipStyle}
+              labelStyle={tooltipLabelStyle}
+              itemStyle={tooltipItemStyle}
+            />
             <Legend />
             {config.dataKeys?.map((key, idx) => (
               <Line key={key} type="monotone" dataKey={key} stroke={colors[idx % colors.length]} />
@@ -594,7 +621,11 @@ const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) => {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey={config.xKey || 'name'} />
             <YAxis />
-            <Tooltip />
+            <Tooltip
+              contentStyle={tooltipStyle}
+              labelStyle={tooltipLabelStyle}
+              itemStyle={tooltipItemStyle}
+            />
             <Legend />
             {config.dataKeys?.map((key, idx) => (
               <Area key={key} type="monotone" dataKey={key} fill={colors[idx % colors.length]} stroke={colors[idx % colors.length]} />
@@ -616,7 +647,10 @@ const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) => {
                 <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
               ))}
             </Pie>
-            <Tooltip />
+            <Tooltip
+              contentStyle={tooltipStyle}
+              itemStyle={tooltipItemStyle}
+            />
             <Legend />
           </PieChart>
         )}
@@ -625,7 +659,11 @@ const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) => {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey={config.xKey || 'x'} />
             <YAxis dataKey={config.dataKeys?.[0] || 'y'} />
-            <Tooltip />
+            <Tooltip
+              contentStyle={tooltipStyle}
+              labelStyle={tooltipLabelStyle}
+              itemStyle={tooltipItemStyle}
+            />
             <Legend />
             <Scatter name="Data" data={config.data} fill={colors[0]} />
           </ScatterChart>
