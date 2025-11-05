@@ -262,12 +262,38 @@ User <|-- Admin
 @enduml
 \`\`\`
 
-### SVG Graphics
+### SVG Graphics - Analytics Dashboard Icon
 \`\`\`svg
-<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="100" cy="100" r="80" fill="#3b82f6" opacity="0.6" />
-  <rect x="60" y="60" width="80" height="80" fill="#ef4444" opacity="0.6" />
-  <polygon points="100,40 140,140 60,140" fill="#10b981" opacity="0.6" />
+<svg width="240" height="180" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="240" height="180" fill="#f8fafc" rx="8"/>
+
+  <!-- Bar Chart -->
+  <rect x="30" y="120" width="30" height="40" fill="#3b82f6" rx="4"/>
+  <rect x="70" y="90" width="30" height="70" fill="#8b5cf6" rx="4"/>
+  <rect x="110" y="70" width="30" height="90" fill="#ec4899" rx="4"/>
+  <rect x="150" y="100" width="30" height="60" fill="#f59e0b" rx="4"/>
+  <rect x="190" y="110" width="30" height="50" fill="#10b981" rx="4"/>
+
+  <!-- Trend Line -->
+  <polyline points="45,130 85,105 125,85 165,115 205,120"
+            fill="none" stroke="#ef4444" stroke-width="3"
+            stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Data Points -->
+  <circle cx="45" cy="130" r="5" fill="#ef4444" stroke="#fff" stroke-width="2"/>
+  <circle cx="85" cy="105" r="5" fill="#ef4444" stroke="#fff" stroke-width="2"/>
+  <circle cx="125" cy="85" r="5" fill="#ef4444" stroke="#fff" stroke-width="2"/>
+  <circle cx="165" cy="115" r="5" fill="#ef4444" stroke="#fff" stroke-width="2"/>
+  <circle cx="205" cy="120" r="5" fill="#ef4444" stroke="#fff" stroke-width="2"/>
+
+  <!-- Title -->
+  <text x="120" y="25" text-anchor="middle" font-family="Arial, sans-serif"
+        font-size="16" font-weight="bold" fill="#1e293b">Revenue Growth</text>
+
+  <!-- Legend -->
+  <circle cx="30" cy="45" r="4" fill="#ef4444"/>
+  <text x="40" y="49" font-family="Arial, sans-serif" font-size="12" fill="#64748b">Trend</text>
 </svg>
 \`\`\`
 
