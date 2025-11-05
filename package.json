@@ -38,6 +38,7 @@
     "plantuml-encoder": "^1.4.0",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^15.5.0",
+    "recharts": "^3.3.0",
     "rehype-katex": "^7.0.1",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0"
