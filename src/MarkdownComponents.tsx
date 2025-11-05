@@ -1,9 +1,12 @@
-import React from 'react';
-import ReactMarkdown from 'react-markdown';
+import React, { useEffect, useRef, useState } from 'react';
+import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import type { PluggableList } from 'unified';
+import mermaid from 'mermaid';
+import { encode } from 'plantuml-encoder';
+import DOMPurify from 'dompurify';
 import 'katex/dist/katex.min.css';
 // Load mhchem for chemistry support
 import 'katex/dist/contrib/mhchem.js';
@@ -50,6 +53,11 @@ export const preprocessMarkdown = (content: string): string => {
     // Normalize line endings
     let processed = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     
+    // 0) Mask code blocks/inline code FIRST so we never touch them during preprocessing
+    //    This is critical for preserving $ symbols in Mermaid, PlantUML, and other code blocks
+    const { masked, masks } = maskCodeSegments(processed);
+    processed = masked;
+    
     // Auto-detect and wrap common math patterns that might not have delimiters
     // This helps catch expressions like "x^2 + y^2 = z^2" and wrap them properly
     const mathPatterns = [
@@ -68,8 +76,6 @@ export const preprocessMarkdown = (content: string): string => {
       processed = processed.replace(pattern, (match, expr) => {
         // Check if already wrapped in $ or $$
         if (match.includes('$')) return match;
-        // Check if it's inside a code block (rough check)
-        if (match.includes('`')) return match;
         // Avoid wrapping single-letter words like "I" that are not math
         const trimmed = String(expr ?? '').trim();
         if (/^[A-Za-z]$/.test(trimmed)) return match;
@@ -89,10 +95,6 @@ export const preprocessMarkdown = (content: string): string => {
         return match.replace(expr, `$${expr}$`);
       });
     });
-
-    // 0) Mask code blocks/inline code so we never touch them
-    const { masked, masks } = maskCodeSegments(processed);
-    processed = masked;
 
     // 1) Temporarily replace currency with placeholders
     //    - Supports negatives, parentheses, thousands, decimals, ranges, and suffixes (k/m/b, etc.)
@@ -176,6 +178,211 @@ export const preprocessMarkdown = (content: string): string => {
 };
 
 /**
+ * Mermaid diagram renderer component
+ */
+interface MermaidRendererProps {
+  code: string;
+}
+
+// Initialize mermaid once
+let mermaidInitialized = false;
+const initializeMermaid = () => {
+  if (typeof window === 'undefined' || mermaidInitialized) return;
+  
+  try {
+    mermaid.initialize({ 
+      startOnLoad: false, 
+      theme: 'default',
+      securityLevel: 'loose',
+    });
+    mermaidInitialized = true;
+  } catch (err) {
+    console.warn('Failed to initialize Mermaid:', err);
+  }
+};
+
+const MermaidRenderer: React.FC<MermaidRendererProps> = ({ code }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [svg, setSvg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!code.trim()) return;
+
+    const renderDiagram = async () => {
+      try {
+        initializeMermaid();
+
+        const diagramId = `mermaid-${Math.random().toString(36).substring(2, 11)}`;
+        
+        // Use mermaid.render to generate SVG
+        const result = await mermaid.render(diagramId, code);
+        setSvg(result.svg);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to render Mermaid diagram');
+        setSvg(null);
+      }
+    };
+
+    renderDiagram();
+  }, [code]);
+
+  if (error) {
+    return (
+      <div className="graph-error">
+        <div className="graph-error-title">Mermaid Rendering Error</div>
+        <div className="graph-error-message">{error}</div>
+        <pre style={{ marginTop: '8px', fontSize: '0.8em', opacity: 0.7 }}>
+          <code>{code}</code>
+        </pre>
+      </div>
+    );
+  }
+
+  if (!svg) {
+    return (
+      <div className="graph-container mermaid-container">
+        <div>Loading Mermaid diagram...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="graph-container mermaid-container">
+      <div 
+        ref={containerRef}
+        dangerouslySetInnerHTML={{ __html: svg }}
+      />
+    </div>
+  );
+};
+
+/**
+ * PlantUML diagram renderer component
+ */
+interface PlantUMLRendererProps {
+  code: string;
+  serverUrl?: string;
+}
+
+const PlantUMLRenderer: React.FC<PlantUMLRendererProps> = ({ code, serverUrl }) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!code.trim()) return;
+
+    try {
+      const encoded = encode(code);
+      const baseUrl = serverUrl || 'https://www.plantuml.com/plantuml';
+      const url = `${baseUrl}/svg/${encoded}`;
+      setImageUrl(url);
+      setIsLoading(false);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to encode PlantUML diagram');
+      setIsLoading(false);
+    }
+  }, [code, serverUrl]);
+
+  if (error) {
+    return (
+      <div className="graph-error">
+        <div className="graph-error-title">PlantUML Rendering Error</div>
+        <div className="graph-error-message">{error}</div>
+        <pre style={{ marginTop: '8px', fontSize: '0.8em', opacity: 0.7 }}>
+          <code>{code}</code>
+        </pre>
+      </div>
+    );
+  }
+
+  if (isLoading || !imageUrl) {
+    return (
+      <div className="graph-container plantuml-container">
+        <div>Loading PlantUML diagram...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="graph-container plantuml-container">
+      <img
+        src={imageUrl}
+        alt="PlantUML diagram"
+        onError={() => setError('Failed to load PlantUML diagram image')}
+        style={{ maxWidth: '100%', height: 'auto' }}
+      />
+    </div>
+  );
+};
+
+/**
+ * SVG renderer component with sanitization
+ */
+interface SVGRendererProps {
+  code: string;
+}
+
+const SVGRenderer: React.FC<SVGRendererProps> = ({ code }) => {
+  const [sanitizedSvg, setSanitizedSvg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!code.trim()) return;
+
+    try {
+      // Sanitize the SVG content
+      const sanitized = DOMPurify.sanitize(code, {
+        USE_PROFILES: { svg: true, svgFilters: true },
+        ADD_TAGS: ['svg', 'g', 'path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'text', 'defs', 'use'],
+        ADD_ATTR: ['viewBox', 'xmlns', 'x', 'y', 'width', 'height', 'fill', 'stroke', 'stroke-width', 'd', 'transform'],
+      });
+
+      if (!sanitized || sanitized.trim().length === 0) {
+        throw new Error('SVG sanitization resulted in empty content');
+      }
+
+      setSanitizedSvg(sanitized);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to sanitize SVG');
+    }
+  }, [code]);
+
+  if (error) {
+    return (
+      <div className="graph-error">
+        <div className="graph-error-title">SVG Rendering Error</div>
+        <div className="graph-error-message">{error}</div>
+        <pre style={{ marginTop: '8px', fontSize: '0.8em', opacity: 0.7 }}>
+          <code>{code}</code>
+        </pre>
+      </div>
+    );
+  }
+
+  if (!sanitizedSvg) {
+    return (
+      <div className="graph-container svg-container">
+        <div>Processing SVG...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="graph-container svg-container">
+      <div
+        dangerouslySetInnerHTML={{ __html: sanitizedSvg }}
+        style={{ display: 'inline-block' }}
+      />
+    </div>
+  );
+};
+
+/**
  * Custom link component for ReactMarkdown that opens links in new tabs
  */
 export const MarkdownLink: React.FC<React.AnchorHTMLAttributes<HTMLAnchorElement>> = ({
@@ -195,7 +402,91 @@ export interface MarkdownRendererProps {
    * Optional flag to disable math rendering entirely if needed
    */
   disableMath?: boolean;
+  /**
+   * Enable graph rendering (default: true)
+   */
+  enableGraphs?: boolean;
+  /**
+   * Enable Mermaid diagram rendering (default: true)
+   */
+  enableMermaid?: boolean;
+  /**
+   * Enable PlantUML diagram rendering (default: true)
+   */
+  enablePlantUML?: boolean;
+  /**
+   * Enable SVG rendering (default: true)
+   */
+  enableSVG?: boolean;
+  /**
+   * Custom PlantUML server URL (optional)
+   */
+  plantUMLServerUrl?: string;
 }
+
+/**
+ * Custom code block component that routes to appropriate graph renderers
+ */
+interface CodeBlockProps {
+  inline?: boolean;
+  className?: string;
+  children?: React.ReactNode;
+  enableGraphs?: boolean;
+  enableMermaid?: boolean;
+  enablePlantUML?: boolean;
+  enableSVG?: boolean;
+  plantUMLServerUrl?: string;
+}
+
+const CodeBlock: React.FC<CodeBlockProps> = ({
+  inline,
+  className = '',
+  children,
+  enableGraphs = true,
+  enableMermaid = true,
+  enablePlantUML = true,
+  enableSVG = true,
+  plantUMLServerUrl,
+}) => {
+  // Handle inline code (always render as code)
+  if (inline) {
+    return <code className={className}>{children}</code>;
+  }
+
+  // Extract language from className (e.g., "language-mermaid" -> "mermaid")
+  const match = /language-(\w+)/.exec(className || '');
+  const language = match ? match[1].toLowerCase() : '';
+  const code = String(children).replace(/\n$/, '');
+
+  // If graphs are disabled, render as normal code block
+  if (!enableGraphs) {
+    return (
+      <pre className={className}>
+        <code>{code}</code>
+      </pre>
+    );
+  }
+
+  // Route to appropriate renderer based on language
+  if (language === 'mermaid' && enableMermaid) {
+    return <MermaidRenderer code={code} />;
+  }
+
+  if ((language === 'plantuml' || language === 'puml') && enablePlantUML) {
+    return <PlantUMLRenderer code={code} serverUrl={plantUMLServerUrl} />;
+  }
+
+  if (language === 'svg' && enableSVG) {
+    return <SVGRenderer code={code} />;
+  }
+
+  // Default: render as normal code block
+  return (
+    <pre className={className}>
+      <code>{code}</code>
+    </pre>
+  );
+};
 
 /**
  * Enhanced Markdown renderer with robust currency and math handling
@@ -204,6 +495,11 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   content,
   className = '',
   disableMath = false,
+  enableGraphs = true,
+  enableMermaid = true,
+  enablePlantUML = true,
+  enableSVG = true,
+  plantUMLServerUrl,
 }) => {
   const processedContent = preprocessMarkdown(content);
   if (!processedContent) return null;
@@ -236,11 +532,33 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     }]
   ];
 
+  const components: Partial<Components> = {
+    code: (props) => {
+      const { className, children, ...rest } = props;
+      const inline = 'inline' in props && typeof props.inline === 'boolean' ? props.inline : false;
+      return (
+        <CodeBlock
+          inline={inline}
+          className={className}
+          enableGraphs={enableGraphs}
+          enableMermaid={enableMermaid}
+          enablePlantUML={enablePlantUML}
+          enableSVG={enableSVG}
+          plantUMLServerUrl={plantUMLServerUrl}
+          {...rest}
+        >
+          {children}
+        </CodeBlock>
+      );
+    },
+  };
+
   return (
     <div className={`markdown-content ${className}`}>
       <ReactMarkdown 
         remarkPlugins={remarkPlugins} 
         rehypePlugins={rehypePlugins}
+        components={components}
       >
         {processedContent}
       </ReactMarkdown>

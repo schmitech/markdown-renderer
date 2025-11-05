@@ -210,6 +210,99 @@ $$
 Check out this really long URL: https://www.example.com/very/long/path/that/goes/on/and/on/and/on/with/many/parameters?param1=value1&param2=value2&param3=value3&param4=value4`
   },
   {
+    title: 'Graphs and Diagrams',
+    content: `## Graph Rendering
+
+### Mermaid Flowchart
+\`\`\`mermaid
+graph TD
+    A[Start] --> B{Is it working?}
+    B -->|Yes| C[Great!]
+    B -->|No| D[Debug]
+    D --> B
+    C --> E[End]
+\`\`\`
+
+### Mermaid Sequence Diagram
+\`\`\`mermaid
+sequenceDiagram
+    participant User
+    participant App
+    participant API
+    User->>App: Request data
+    App->>API: Fetch data
+    API-->>App: Return data
+    App-->>User: Display results
+\`\`\`
+
+### PlantUML Sequence Diagram
+\`\`\`plantuml
+@startuml
+Alice -> Bob: Authentication Request
+Bob --> Alice: Authentication Response
+Alice -> Bob: Another authentication Request
+Alice <-- Bob: Another authentication Response
+@enduml
+\`\`\`
+
+### PlantUML Class Diagram
+\`\`\`puml
+@startuml
+class User {
+  +String name
+  +String email
+  +login()
+  +logout()
+}
+class Admin {
+  +String permissions
+  +deleteUser()
+}
+User <|-- Admin
+@enduml
+\`\`\`
+
+### SVG Graphics
+\`\`\`svg
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="100" cy="100" r="80" fill="#3b82f6" opacity="0.6" />
+  <rect x="60" y="60" width="80" height="80" fill="#ef4444" opacity="0.6" />
+  <polygon points="100,40 140,140 60,140" fill="#10b981" opacity="0.6" />
+</svg>
+\`\`\`
+
+### Mixed Content: Graphs with Math and Currency
+The algorithm costs $500 to run and has complexity $O(n \\log n)$:
+
+\`\`\`mermaid
+graph LR
+    A[Input: x] --> B[Process: f of x]
+    B --> C{Cost check}
+    C -->|Yes| D[Output]
+    C -->|No| E[Optimize]
+    E --> B
+\`\`\`
+
+The diagram above shows the processing flow where input $x$ goes through function $f(x) = x^2$.
+
+The chemical reaction rate constant $k$ follows:
+$$k = A \\cdot e^{-E_a/RT}$$
+
+Budget breakdown with pricing in markdown:
+- Development: $22,500 (45%)
+- Testing: $12,500 (25%)
+- Documentation: $7,500 (15%)
+- Deployment: $7,500 (15%)
+
+\`\`\`mermaid
+pie title Project Budget Distribution
+    "Development" : 45
+    "Testing" : 25
+    "Documentation" : 15
+    "Deployment" : 15
+\`\`\``
+  },
+  {
     title: 'Real-world Example',
     content: `# Project Documentation
 
@@ -263,7 +356,7 @@ The oxidation process follows: $\\ce{2H2O2 -> 2H2O + O2}$
 ## Pricing
 
 - Basic Plan: $9.99/month
-- Pro Plan: $29.99/month  
+- Pro Plan: $29.99/month
 - Enterprise: $99.99/month
 
 > **Note:** All prices are in USD. Mathematical models show ROI of $r = 1.5x$ where $x$ is your investment.`

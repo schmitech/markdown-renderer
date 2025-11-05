@@ -185,3 +185,70 @@
   overflow-x: auto;
   overflow-y: hidden;
 }
+
+/* Graph containers */
+.markdown-content .graph-container {
+  margin: 16px 0;
+  padding: 12px;
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.markdown-content .graph-container svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.markdown-content .graph-container img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Graph error states */
+.markdown-content .graph-error {
+  padding: 12px 16px;
+  margin: 16px 0;
+  border-radius: 6px;
+  background-color: rgba(255, 0, 0, 0.05);
+  border: 1px solid rgba(255, 0, 0, 0.2);
+  color: #cc0000;
+  font-size: 0.9em;
+  font-family: Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.markdown-content .graph-error-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.markdown-content .graph-error-message {
+  opacity: 0.8;
+  font-size: 0.85em;
+}
+
+/* Mermaid specific styles */
+.markdown-content .mermaid-container {
+  text-align: center;
+}
+
+/* PlantUML specific styles */
+.markdown-content .plantuml-container {
+  text-align: center;
+}
+
+/* SVG specific styles */
+.markdown-content .svg-container {
+  text-align: center;
+}
+
+.markdown-content .svg-container svg {
+  display: block;
+  margin: 0 auto;
+}
