@@ -7,6 +7,8 @@ import type { PluggableList } from 'unified';
 import mermaid from 'mermaid';
 import { encode } from 'plantuml-encoder';
 import DOMPurify from 'dompurify';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import 'katex/dist/katex.min.css';
 // Load mhchem for chemistry support
 import 'katex/dist/contrib/mhchem.js';
@@ -422,6 +424,14 @@ export interface MarkdownRendererProps {
    * Custom PlantUML server URL (optional)
    */
   plantUMLServerUrl?: string;
+  /**
+   * Enable syntax highlighting for code blocks (default: true)
+   */
+  enableSyntaxHighlighting?: boolean;
+  /**
+   * Syntax highlighting theme: 'dark' or 'light' (default: 'dark')
+   */
+  syntaxTheme?: 'dark' | 'light';
 }
 
 /**
@@ -436,6 +446,8 @@ interface CodeBlockProps {
   enablePlantUML?: boolean;
   enableSVG?: boolean;
   plantUMLServerUrl?: string;
+  enableSyntaxHighlighting?: boolean;
+  syntaxTheme?: 'dark' | 'light';
 }
 
 const CodeBlock: React.FC<CodeBlockProps> = ({
@@ -447,6 +459,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   enablePlantUML = true,
   enableSVG = true,
   plantUMLServerUrl,
+  enableSyntaxHighlighting = true,
+  syntaxTheme = 'dark',
 }) => {
   // Handle inline code (always render as code)
   if (inline) {
@@ -458,33 +472,48 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   const language = match ? match[1].toLowerCase() : '';
   const code = String(children).replace(/\n$/, '');
 
-  // If graphs are disabled, render as normal code block
-  if (!enableGraphs) {
+  // Route to graph renderers first (if enabled)
+  if (enableGraphs) {
+    if (language === 'mermaid' && enableMermaid) {
+      return <MermaidRenderer code={code} />;
+    }
+
+    if ((language === 'plantuml' || language === 'puml') && enablePlantUML) {
+      return <PlantUMLRenderer code={code} serverUrl={plantUMLServerUrl} />;
+    }
+
+    if (language === 'svg' && enableSVG) {
+      return <SVGRenderer code={code} />;
+    }
+  }
+
+  // Use syntax highlighting for regular code blocks
+  if (enableSyntaxHighlighting && language) {
+    const style = syntaxTheme === 'light' ? vs : vscDarkPlus;
     return (
-      <pre className={className}>
-        <code>{code}</code>
-      </pre>
+      <SyntaxHighlighter
+        language={language}
+        style={style}
+        customStyle={{
+          margin: '12px 0',
+          borderRadius: '6px',
+          fontSize: '0.9em',
+        }}
+        showLineNumbers={false}
+      >
+        {code}
+      </SyntaxHighlighter>
     );
   }
 
-  // Route to appropriate renderer based on language
-  if (language === 'mermaid' && enableMermaid) {
-    return <MermaidRenderer code={code} />;
-  }
-
-  if ((language === 'plantuml' || language === 'puml') && enablePlantUML) {
-    return <PlantUMLRenderer code={code} serverUrl={plantUMLServerUrl} />;
-  }
-
-  if (language === 'svg' && enableSVG) {
-    return <SVGRenderer code={code} />;
-  }
-
-  // Default: render as normal code block
+  // Fallback: render as normal code block
+  // Use div instead of pre to avoid nesting issues with ReactMarkdown paragraph wrapping
   return (
-    <pre className={className}>
-      <code>{code}</code>
-    </pre>
+    <div className={`markdown-code-block ${className}`.trim()}>
+      <pre style={{ margin: 0, padding: 0, background: 'transparent', border: 'none' }}>
+        <code>{code}</code>
+      </pre>
+    </div>
   );
 };
 
@@ -500,6 +529,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   enablePlantUML = true,
   enableSVG = true,
   plantUMLServerUrl,
+  enableSyntaxHighlighting = true,
+  syntaxTheme = 'dark',
 }) => {
   const processedContent = preprocessMarkdown(content);
   if (!processedContent) return null;
@@ -536,7 +567,11 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     code: (props) => {
       const { className, children, ...rest } = props;
       const inline = 'inline' in props && typeof props.inline === 'boolean' ? props.inline : false;
-      return (
+      // Check if this is a block-level code block (has language-* className)
+      const isBlockLevel = !inline && className && /language-/.test(className);
+      
+      // If it's block-level, wrap in a fragment with a data attribute for paragraph detection
+      const codeBlock = (
         <CodeBlock
           inline={inline}
           className={className}
@@ -545,18 +580,42 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           enablePlantUML={enablePlantUML}
           enableSVG={enableSVG}
           plantUMLServerUrl={plantUMLServerUrl}
+          enableSyntaxHighlighting={enableSyntaxHighlighting}
+          syntaxTheme={syntaxTheme}
           {...rest}
         >
           {children}
         </CodeBlock>
       );
+      
+      // For block-level code, wrap in a fragment that signals it shouldn't be in a paragraph
+      if (isBlockLevel) {
+        return <React.Fragment key="block-code">{codeBlock}</React.Fragment>;
+      }
+      
+      return codeBlock;
+    },
+    // Custom paragraph component to avoid nesting block elements inside <p>
+    p: (props) => {
+      const hasBlockChild = React.Children.toArray(props.children).some(child =>
+        React.isValidElement(child) &&
+        (child.type as any) === CodeBlock && // Direct comparison to the component
+        !child.props.inline
+      );
+
+      if (hasBlockChild) {
+        // Use a div instead of a p tag to avoid nesting errors
+        return <div>{props.children}</div>;
+      }
+
+      return <p>{props.children}</p>;
     },
   };
 
   return (
     <div className={`markdown-content ${className}`}>
-      <ReactMarkdown 
-        remarkPlugins={remarkPlugins} 
+      <ReactMarkdown
+        remarkPlugins={remarkPlugins}
         rehypePlugins={rehypePlugins}
         components={components}
       >
