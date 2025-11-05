@@ -190,12 +190,18 @@ interface MermaidRendererProps {
 let mermaidInitialized = false;
 const initializeMermaid = () => {
   if (typeof window === 'undefined' || mermaidInitialized) return;
-  
+
   try {
-    mermaid.initialize({ 
-      startOnLoad: false, 
+    mermaid.initialize({
+      startOnLoad: false,
       theme: 'default',
       securityLevel: 'loose',
+      themeVariables: {
+        background: '#ffffff',
+        primaryColor: '#fff',
+        secondaryColor: '#f4f4f4',
+        tertiaryColor: '#fff',
+      }
     });
     mermaidInitialized = true;
   } catch (err) {
