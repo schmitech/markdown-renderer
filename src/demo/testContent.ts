@@ -329,6 +329,79 @@ pie title Project Budget Distribution
 \`\`\``
   },
   {
+    title: 'Charts and Data Visualization',
+    content: `## Interactive Charts
+
+### Simple Bar Chart
+\`\`\`chart
+type: bar
+title: Q1 Sales Performance
+data: [45000, 52000, 48000]
+labels: [January, February, March]
+colors: [#3b82f6, #8b5cf6, #ec4899]
+\`\`\`
+
+### Table-based Line Chart
+\`\`\`chart
+type: line
+title: Revenue Growth Over Time
+| Month | Revenue | Expenses |
+|-------|---------|----------|
+| Jan   | 100000  | 80000    |
+| Feb   | 150000  | 90000    |
+| Mar   | 200000  | 110000   |
+| Apr   | 180000  | 105000   |
+| May   | 220000  | 115000   |
+| Jun   | 250000  | 120000   |
+\`\`\`
+
+### Pie Chart - Market Share
+\`\`\`chart
+type: pie
+title: Market Share by Product
+data: [35, 25, 20, 15, 5]
+labels: [Product A, Product B, Product C, Product D, Others]
+\`\`\`
+
+### Area Chart - User Growth
+\`\`\`chart
+type: area
+title: Monthly Active Users
+| Month | Users  | Premium |
+|-------|--------|---------|
+| Jan   | 10000  | 1000    |
+| Feb   | 15000  | 1500    |
+| Mar   | 22000  | 2200    |
+| Apr   | 28000  | 3000    |
+| May   | 35000  | 4000    |
+| Jun   | 42000  | 5200    |
+\`\`\`
+
+### Multi-Series Bar Chart
+\`\`\`chart
+type: bar
+title: Department Performance Comparison
+| Department | Q1    | Q2    | Q3    | Q4    |
+|------------|-------|-------|-------|-------|
+| Sales      | 45000 | 52000 | 48000 | 60000 |
+| Marketing  | 35000 | 38000 | 42000 | 45000 |
+| Support    | 25000 | 28000 | 30000 | 32000 |
+\`\`\`
+
+### Real-world Example with Context
+Our Q2 revenue reached $250,000, representing a 14% increase from Q1. Here's the breakdown:
+
+\`\`\`chart
+type: bar
+title: Q2 Revenue by Channel
+data: [85000, 95000, 70000]
+labels: [Direct Sales, Online, Partners]
+colors: [#10b981, #3b82f6, #f59e0b]
+\`\`\`
+
+The online channel showed the strongest growth at $95,000, driven by our new e-commerce platform launch in Q1.`
+  },
+  {
     title: 'Real-world Example',
     content: `# Project Documentation
 

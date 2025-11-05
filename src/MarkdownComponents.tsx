@@ -9,6 +9,7 @@ import { encode } from 'plantuml-encoder';
 import DOMPurify from 'dompurify';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, AreaChart, Area, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import 'katex/dist/katex.min.css';
 // Load mhchem for chemistry support
 import 'katex/dist/contrib/mhchem.js';
@@ -391,6 +392,250 @@ const SVGRenderer: React.FC<SVGRendererProps> = ({ code }) => {
 };
 
 /**
+ * Chart renderer component with support for multiple formats
+ */
+interface ChartRendererProps {
+  code: string;
+  language: string;
+}
+
+// Default color palette for charts
+const DEFAULT_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#6366f1', '#ef4444'];
+
+interface ChartConfig {
+  type: 'bar' | 'line' | 'pie' | 'area' | 'scatter';
+  title?: string;
+  data: any[];
+  dataKeys?: string[];
+  xKey?: string;
+  colors?: string[];
+  width?: number;
+  height?: number;
+}
+
+const parseChartConfig = (code: string, language: string): ChartConfig | null => {
+  try {
+    // Parse JSON format
+    if (language === 'chart-json') {
+      return JSON.parse(code);
+    }
+
+    // Parse simple YAML-like format
+    const lines = code.trim().split('\n');
+    const config: any = { colors: DEFAULT_COLORS };
+
+    // Check if it's table format
+    const hasTable = lines.some(line => line.includes('|'));
+
+    if (hasTable) {
+      // Parse table format
+      const tableLines = lines.filter(line => line.includes('|'));
+      const headers = tableLines[0].split('|').map(h => h.trim()).filter(Boolean);
+      const dataRows = tableLines.slice(2); // Skip header and separator
+
+      config.data = dataRows.map(row => {
+        const values = row.split('|').map(v => v.trim()).filter(Boolean);
+        const obj: any = {};
+        headers.forEach((header, idx) => {
+          const value = values[idx];
+          // Try to parse as number, otherwise keep as string
+          obj[header] = isNaN(Number(value)) ? value : Number(value);
+        });
+        return obj;
+      });
+
+      config.xKey = headers[0];
+      config.dataKeys = headers.slice(1);
+
+      // Parse config lines (before table)
+      for (const line of lines) {
+        if (line.includes('|')) break;
+        const [key, ...valueParts] = line.split(':');
+        if (key && valueParts.length) {
+          const value = valueParts.join(':').trim();
+          if (key.trim() === 'type') config.type = value;
+          if (key.trim() === 'title') config.title = value;
+        }
+      }
+    } else {
+      // Parse simple key-value format
+      for (const line of lines) {
+        const [key, ...valueParts] = line.split(':');
+        if (!key || !valueParts.length) continue;
+
+        const trimmedKey = key.trim();
+        const value = valueParts.join(':').trim();
+
+        if (trimmedKey === 'type') {
+          config.type = value;
+        } else if (trimmedKey === 'title') {
+          config.title = value;
+        } else if (trimmedKey === 'data') {
+          // Parse array: [1, 2, 3]
+          config.data = JSON.parse(value);
+        } else if (trimmedKey === 'labels') {
+          // Parse array: [A, B, C] or [Product A, Product B]
+          // Handle items with spaces by splitting on commas outside brackets
+          if (value.startsWith('[') && value.endsWith(']')) {
+            const content = value.slice(1, -1); // Remove [ and ]
+            config.labels = content.split(',').map(item => item.trim());
+          } else {
+            config.labels = JSON.parse(value);
+          }
+        } else if (trimmedKey === 'colors') {
+          // Parse array: [#fff, #000] or [#10b981, #3b82f6]
+          if (value.startsWith('[') && value.endsWith(']')) {
+            const content = value.slice(1, -1); // Remove [ and ]
+            config.colors = content.split(',').map(item => item.trim());
+          } else {
+            config.colors = JSON.parse(value);
+          }
+        } else if (trimmedKey === 'xKey') {
+          config.xKey = value;
+        } else if (trimmedKey === 'dataKeys') {
+          // Parse array: [key1, key2]
+          if (value.startsWith('[') && value.endsWith(']')) {
+            const content = value.slice(1, -1); // Remove [ and ]
+            config.dataKeys = content.split(',').map(item => item.trim());
+          } else {
+            config.dataKeys = JSON.parse(value);
+          }
+        }
+      }
+
+      // Transform simple format to recharts format
+      if (Array.isArray(config.data) && typeof config.data[0] === 'number') {
+        const labels = config.labels || config.data.map((_: number, i: number) => `Item ${i + 1}`);
+        config.data = config.data.map((value: number, idx: number) => ({
+          name: labels[idx],
+          value: value
+        }));
+        config.xKey = 'name';
+        config.dataKeys = ['value'];
+      }
+    }
+
+    return config as ChartConfig;
+  } catch (err) {
+    console.error('Failed to parse chart config:', err);
+    return null;
+  }
+};
+
+const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) => {
+  const [error, setError] = useState<string | null>(null);
+  const [config, setConfig] = useState<ChartConfig | null>(null);
+
+  useEffect(() => {
+    const parsed = parseChartConfig(code, language);
+    if (!parsed) {
+      setError('Failed to parse chart configuration');
+    } else if (!parsed.type) {
+      setError('Chart type is required (bar, line, pie, area, scatter)');
+    } else {
+      setConfig(parsed);
+      setError(null);
+    }
+  }, [code, language]);
+
+  if (error) {
+    return (
+      <div className="graph-error">
+        <div className="graph-error-title">Chart Rendering Error</div>
+        <div className="graph-error-message">{error}</div>
+        <pre style={{ marginTop: '8px', fontSize: '0.8em', opacity: 0.7 }}>
+          <code>{code}</code>
+        </pre>
+      </div>
+    );
+  }
+
+  if (!config) {
+    return (
+      <div className="graph-container chart-container">
+        <div>Loading chart...</div>
+      </div>
+    );
+  }
+
+  const colors = config.colors || DEFAULT_COLORS;
+  const height = config.height || 300;
+
+  return (
+    <div className="graph-container chart-container" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+      {config.title && <h4 style={{ textAlign: 'center', marginBottom: '12px', marginTop: 0 }}>{config.title}</h4>}
+      <ResponsiveContainer width="100%" height={height}>
+        {config.type === 'bar' && (
+          <BarChart data={config.data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={config.xKey || 'name'} />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            {config.dataKeys?.map((key, idx) => (
+              <Bar key={key} dataKey={key} fill={colors[idx % colors.length]} />
+            )) || <Bar dataKey="value" fill={colors[0]} />}
+          </BarChart>
+        )}
+        {config.type === 'line' && (
+          <LineChart data={config.data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={config.xKey || 'name'} />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            {config.dataKeys?.map((key, idx) => (
+              <Line key={key} type="monotone" dataKey={key} stroke={colors[idx % colors.length]} />
+            )) || <Line type="monotone" dataKey="value" stroke={colors[0]} />}
+          </LineChart>
+        )}
+        {config.type === 'area' && (
+          <AreaChart data={config.data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={config.xKey || 'name'} />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            {config.dataKeys?.map((key, idx) => (
+              <Area key={key} type="monotone" dataKey={key} fill={colors[idx % colors.length]} stroke={colors[idx % colors.length]} />
+            )) || <Area type="monotone" dataKey="value" fill={colors[0]} stroke={colors[0]} />}
+          </AreaChart>
+        )}
+        {config.type === 'pie' && (
+          <PieChart>
+            <Pie
+              data={config.data}
+              dataKey={config.dataKeys?.[0] || 'value'}
+              nameKey={config.xKey || 'name'}
+              cx="50%"
+              cy="50%"
+              outerRadius={80}
+              label
+            >
+              {config.data.map((_, index) => (
+                <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+              ))}
+            </Pie>
+            <Tooltip />
+            <Legend />
+          </PieChart>
+        )}
+        {config.type === 'scatter' && (
+          <ScatterChart>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={config.xKey || 'x'} />
+            <YAxis dataKey={config.dataKeys?.[0] || 'y'} />
+            <Tooltip />
+            <Legend />
+            <Scatter name="Data" data={config.data} fill={colors[0]} />
+          </ScatterChart>
+        )}
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+/**
  * Custom link component for ReactMarkdown that opens links in new tabs
  */
 export const MarkdownLink: React.FC<React.AnchorHTMLAttributes<HTMLAnchorElement>> = ({
@@ -438,6 +683,10 @@ export interface MarkdownRendererProps {
    * Syntax highlighting theme: 'dark' or 'light' (default: 'dark')
    */
   syntaxTheme?: 'dark' | 'light';
+  /**
+   * Enable chart rendering (default: true)
+   */
+  enableCharts?: boolean;
 }
 
 /**
@@ -451,6 +700,7 @@ interface CodeBlockProps {
   enableMermaid?: boolean;
   enablePlantUML?: boolean;
   enableSVG?: boolean;
+  enableCharts?: boolean;
   plantUMLServerUrl?: string;
   enableSyntaxHighlighting?: boolean;
   syntaxTheme?: 'dark' | 'light';
@@ -464,6 +714,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   enableMermaid = true,
   enablePlantUML = true,
   enableSVG = true,
+  enableCharts = true,
   plantUMLServerUrl,
   enableSyntaxHighlighting = true,
   syntaxTheme = 'dark',
@@ -478,7 +729,12 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   const language = match ? match[1].toLowerCase() : '';
   const code = String(children).replace(/\n$/, '');
 
-  // Route to graph renderers first (if enabled)
+  // Route to chart renderer (if enabled)
+  if (enableCharts && (language === 'chart' || language === 'chart-json' || language === 'chart-table')) {
+    return <ChartRenderer code={code} language={language} />;
+  }
+
+  // Route to graph renderers (if enabled)
   if (enableGraphs) {
     if (language === 'mermaid' && enableMermaid) {
       return <MermaidRenderer code={code} />;
@@ -534,6 +790,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   enableMermaid = true,
   enablePlantUML = true,
   enableSVG = true,
+  enableCharts = true,
   plantUMLServerUrl,
   enableSyntaxHighlighting = true,
   syntaxTheme = 'dark',
@@ -585,6 +842,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           enableMermaid={enableMermaid}
           enablePlantUML={enablePlantUML}
           enableSVG={enableSVG}
+          enableCharts={enableCharts}
           plantUMLServerUrl={plantUMLServerUrl}
           enableSyntaxHighlighting={enableSyntaxHighlighting}
           syntaxTheme={syntaxTheme}
