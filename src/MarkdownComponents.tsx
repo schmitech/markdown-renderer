@@ -734,6 +734,7 @@ interface CodeBlockProps {
   inline?: boolean;
   className?: string;
   children?: React.ReactNode;
+  'data-block-code'?: string;
   enableGraphs?: boolean;
   enableMermaid?: boolean;
   enablePlantUML?: boolean;
@@ -817,6 +818,29 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   );
 };
 
+const BLOCK_LEVEL_TAGS = new Set([
+  'div',
+  'pre',
+  'blockquote',
+  'ul',
+  'ol',
+  'table',
+  'thead',
+  'tbody',
+  'tr',
+  'td',
+  'th',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'section',
+  'article',
+  'figure',
+]);
+
 /**
  * Enhanced Markdown renderer with robust currency and math handling
  */
@@ -840,39 +864,34 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     ? [remarkGfm]
     : [remarkGfm, [remarkMath, { singleDollarTextMath: true }]];
 
-  const rehypePlugins: PluggableList = disableMath ? [] : [
-    [rehypeKatex, {
-      // KaTeX options for better rendering
-      throwOnError: false, // Don't crash on invalid LaTeX
+  const rehypePlugins: PluggableList = [];
+  if (!disableMath) {
+    rehypePlugins.push([rehypeKatex, {
+      throwOnError: false,
       errorColor: '#cc0000',
-      strict: false, // Allow more flexible syntax
-      trust: true, // Enable all KaTeX features including chemistry
-      // mhchem is loaded automatically when imported above
+      strict: false,
+      trust: true,
       macros: {
-        // Add other useful macros (mhchem provides \ce and \pu)
         "\\RR": "\\mathbb{R}",
         "\\NN": "\\mathbb{N}",
         "\\ZZ": "\\mathbb{Z}",
         "\\QQ": "\\mathbb{Q}",
         "\\CC": "\\mathbb{C}",
-        // Common shortcuts
         "\\dx": "\\,dx",
         "\\dy": "\\,dy",
         "\\dt": "\\,dt",
         "\\dz": "\\,dz",
       }
-    }]
-  ];
+    }]);
+  }
 
   const components: Partial<Components> = {
     code: (props) => {
       const { className, children, ...rest } = props;
       const inline = 'inline' in props && typeof props.inline === 'boolean' ? props.inline : false;
-      // Check if this is a block-level code block (has language-* className)
       const isBlockLevel = !inline && className && /language-/.test(className);
       
-      // If it's block-level, wrap in a fragment with a data attribute for paragraph detection
-      const codeBlock = (
+      return (
         <CodeBlock
           inline={inline}
           className={className}
@@ -884,33 +903,52 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           plantUMLServerUrl={plantUMLServerUrl}
           enableSyntaxHighlighting={enableSyntaxHighlighting}
           syntaxTheme={syntaxTheme}
+          data-block-code={isBlockLevel ? 'true' : undefined}
           {...rest}
         >
           {children}
         </CodeBlock>
       );
-      
-      // For block-level code, wrap in a fragment that signals it shouldn't be in a paragraph
-      if (isBlockLevel) {
-        return <React.Fragment key="block-code">{codeBlock}</React.Fragment>;
-      }
-      
-      return codeBlock;
     },
-    // Custom paragraph component to avoid nesting block elements inside <p>
-    p: (props) => {
-      const hasBlockChild = React.Children.toArray(props.children).some(child =>
-        React.isValidElement(child) &&
-        (child.type as any) === CodeBlock && // Direct comparison to the component
-        !child.props.inline
-      );
+    p: ({ node, ...props }) => {
+      const meaningfulChildren = React.Children.toArray(props.children).filter((child) => {
+        return !(typeof child === 'string' && child.trim() === '');
+      });
 
-      if (hasBlockChild) {
-        // Use a div instead of a p tag to avoid nesting errors
-        return <div>{props.children}</div>;
+      const reactHasBlock = meaningfulChildren.some((child) => {
+        if (!React.isValidElement(child)) return false;
+        if (child.props?.['data-block-code'] === 'true') return true;
+
+        if (typeof child.type === 'string') {
+          return BLOCK_LEVEL_TAGS.has(child.type);
+        }
+
+        return false;
+      });
+
+      const mdastHasBlock = node?.children?.some((child: any) => {
+        if (child.type === 'code') return true; // fenced code blocks
+
+        if (child.type === 'element') {
+          if (BLOCK_LEVEL_TAGS.has(child.tagName)) return true;
+
+          if (child.tagName === 'code') {
+            const className = child.properties?.className;
+            if (Array.isArray(className)) {
+              return className.some((name) => typeof name === 'string' && name.startsWith('language-'));
+            }
+            return true;
+          }
+        }
+
+        return false;
+      });
+
+      if (reactHasBlock || mdastHasBlock) {
+        return <>{props.children}</>;
       }
 
-      return <p>{props.children}</p>;
+      return <p {...props} />;
     },
   };
 
