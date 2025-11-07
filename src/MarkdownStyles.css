@@ -229,6 +229,12 @@
   overflow-y: hidden;
 }
 
+/* Chart titles - ensure they are always black and readable */
+.markdown-content .chart-container h4 {
+  color: #000000 !important;
+  font-weight: 600;
+}
+
 .markdown-content .graph-container svg {
   max-width: 100%;
   height: auto;

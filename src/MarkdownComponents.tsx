@@ -582,7 +582,7 @@ const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) => {
 
   return (
     <div className="graph-container chart-container" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
-      {config.title && <h4 style={{ textAlign: 'center', marginBottom: '12px', marginTop: 0 }}>{config.title}</h4>}
+      {config.title && <h4 style={{ textAlign: 'center', marginBottom: '12px', marginTop: 0, color: '#000000', fontWeight: 600 }}>{config.title}</h4>}
       <ResponsiveContainer width="100%" height={height}>
         {config.type === 'bar' && (
           <BarChart data={config.data}>
