@@ -47,6 +47,8 @@
   text-decoration: underline;
   text-underline-offset: 2px;
   transition: color 0.2s;
+  overflow-wrap: anywhere; /* Ensure long URLs wrap instead of overflowing */
+  word-break: break-word;
 }
 .markdown-content a:hover {
   color: #1d4ed8; /* hover:text-blue-800 */
@@ -64,6 +66,8 @@
 /* Code */
 .markdown-content pre {
   overflow: auto;
+  overflow-y: auto;
+  overflow-x: auto;
   padding: 12px 16px;
   margin: 12px 0;
   border-radius: 6px;
@@ -71,11 +75,16 @@
   border: 1px solid rgba(0, 0, 0, 0.1);
   font-size: 0.9em;
   font-family: Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  max-height: 500px; /* Set a reasonable max height with scrolling */
+  word-wrap: break-word;
+  white-space: pre-wrap;
 }
 
 /* Code block wrapper to avoid paragraph nesting issues */
 .markdown-content .markdown-code-block {
   overflow: auto;
+  overflow-y: auto;
+  overflow-x: auto;
   padding: 12px 16px;
   margin: 12px 0;
   border-radius: 6px;
@@ -85,6 +94,7 @@
   font-family: Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   white-space: pre-wrap;
   word-wrap: break-word;
+  max-height: 500px; /* Set a reasonable max height with scrolling */
 }
 
 .markdown-content .markdown-code-block pre {
@@ -94,6 +104,15 @@
   border: none;
   font-size: inherit;
   font-family: inherit;
+}
+
+/* Syntax-highlighted code blocks (from react-syntax-highlighter) should use pre instead of pre-wrap
+   to preserve formatting and allow horizontal scrolling for long lines */
+.markdown-content .syntax-highlighted-wrapper pre {
+  white-space: pre !important;
+  word-wrap: normal !important;
+  overflow-x: auto;
+  max-height: none; /* Remove height cap for syntax-highlighted blocks */
 }
 
 /* Inline code specifically */
@@ -265,6 +284,59 @@
 .markdown-content .graph-error-message {
   opacity: 0.8;
   font-size: 0.85em;
+}
+
+.markdown-content .graph-error-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.markdown-content .graph-error-icon {
+  font-size: 1.5em;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.markdown-content .graph-error-content {
+  flex: 1;
+}
+
+.markdown-content .graph-error-toggle {
+  background: transparent;
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  color: #cc0000;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85em;
+  transition: all 0.2s;
+  margin-top: 8px;
+  font-family: inherit;
+}
+
+.markdown-content .graph-error-toggle:hover {
+  background-color: rgba(255, 0, 0, 0.1);
+  border-color: rgba(255, 0, 0, 0.4);
+}
+
+.markdown-content .graph-error-details {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 0, 0, 0.2);
+}
+
+.markdown-content .graph-error-details pre {
+  font-family: Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  overflow: auto;
+  max-height: 300px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
 }
 
 /* Mermaid specific styles */
