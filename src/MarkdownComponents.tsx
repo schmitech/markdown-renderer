@@ -73,12 +73,23 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     a: MarkdownLink,
     code: (props) => {
       const { className, children, ...rest } = props;
-      const inline = 'inline' in props && typeof props.inline === 'boolean' ? props.inline : false;
-      const isBlockLevel = !inline && className && /language-/.test(className);
+      
+      // Properly detect inline code:
+      // In react-markdown v10, the most reliable way is:
+      // 1. If inline prop is explicitly set, use that
+      // 2. If there's a language- class, it's a block code (fenced code blocks have language)
+      // 3. If no language class, it's inline code (single backticks like `word`)
+      const hasLanguageClass = className && /language-/.test(className);
+      const isInlineCode = 
+        ('inline' in props && typeof props.inline === 'boolean' && props.inline) ||
+        !hasLanguageClass;
+      
+      // Block-level code: fenced code blocks have language class
+      const isBlockLevel = hasLanguageClass;
       
       return (
         <CodeBlock
-          inline={inline}
+          inline={isInlineCode}
           className={className}
           enableGraphs={enableGraphs}
           enableMermaid={enableMermaid}

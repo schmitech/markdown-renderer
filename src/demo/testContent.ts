@@ -69,6 +69,58 @@ const getUser = async (id: number): Promise<User> => {
 \`\`\``
   },
   {
+    title: 'Inline Code (Single Backticks)',
+    content: `## Inline Code Test
+
+This test case verifies that text surrounded by single backticks (\`word\`) renders as inline code and NOT as full code blocks.
+
+### Basic Inline Code
+
+Here's a simple example: \`const x = 42;\` should appear inline.
+
+### Multiple Inline Code Snippets
+
+You can have multiple inline code snippets like \`variable\`, \`function()\`, and \`class\` in the same paragraph.
+
+### Inline Code in Lists
+
+- Item with \`code\` in it
+- Another item with \`inline\` code
+- List item containing \`multiple\` \`code\` \`snippets\`
+
+### Inline Code in Different Contexts
+
+**Bold text with \`code\` inside** and *italic text with \`code\` too*.
+
+### Edge Cases
+
+- Single character: \`x\`
+- Multiple words: \`this is code\`
+- With punctuation: \`code!\`, \`code?\`, \`code.\`
+- Empty backticks should not break: \`\` (empty)
+- Code at start: \`start\` of sentence
+- Code at end: end of sentence \`end\`
+
+### Mixed with Block Code
+
+Here's inline code: \`inline\` and here's a block:
+
+\`\`\`javascript
+// This should be a block
+const block = true;
+\`\`\`
+
+And more inline: \`more inline\` code.
+
+### Real-world Example
+
+When using \`OP_HUSKY\`, \`PROJECT_X\`, \`CYBER_OPS\`, \`COUNTER_FRAUD\`, and \`INTEL_ANALYSIS\` compartments, ensure proper access controls.
+
+Compartment Access Failures: 53 denials involved users lacking proper need-to-know for compartments including \`OP_HUSKY\`, \`PROJECT_X\`, \`CYBER_OPS\`, \`COUNTER_FRAUD\`, and \`INTEL_ANALYSIS\`.
+
+Classification Escalation Attempts: 42 denials where users attempted to access documents classified \`SECRET\` or \`TOP_SECRET\`.`
+  },
+  {
     title: 'Tables (GFM)',
     content: `## Tables
 

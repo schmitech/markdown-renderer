@@ -97,6 +97,75 @@
   max-height: 500px; /* Set a reasonable max height with scrolling */
 }
 
+/* Code block container with copy button */
+.markdown-content .code-block-container {
+  position: relative;
+}
+
+/* Copy button for code blocks */
+.markdown-content .code-copy-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85em;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: #333;
+  transition: all 0.2s ease;
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.markdown-content .code-block-container:hover .code-copy-button {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.markdown-content .code-copy-button:hover {
+  background-color: rgba(255, 255, 255, 1);
+  border-color: rgba(0, 0, 0, 0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.markdown-content .code-copy-button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.markdown-content .code-copy-button svg {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.markdown-content .code-copy-button-text {
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+/* Dark theme support for copy button */
+@media (prefers-color-scheme: dark) {
+  .markdown-content .code-copy-button {
+    background-color: rgba(30, 30, 30, 0.9);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+  }
+
+  .markdown-content .code-copy-button:hover {
+    background-color: rgba(40, 40, 40, 1);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+}
+
 .markdown-content .markdown-code-block pre {
   margin: 0;
   padding: 0;
@@ -108,6 +177,10 @@
 
 /* Syntax-highlighted code blocks (from react-syntax-highlighter) should use pre instead of pre-wrap
    to preserve formatting and allow horizontal scrolling for long lines */
+.markdown-content .syntax-highlighted-wrapper {
+  position: relative;
+}
+
 .markdown-content .syntax-highlighted-wrapper pre {
   white-space: pre !important;
   word-wrap: normal !important;
@@ -116,6 +189,28 @@
 }
 
 /* Inline code specifically */
+/* General rule for inline code - style all code, then override for block code */
+.markdown-content code {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  font-size: 0.9em;
+  font-family: Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* Override for code inside pre or code blocks (block-level code) */
+.markdown-content pre code,
+.markdown-content .markdown-code-block code,
+.markdown-content .syntax-highlighted-wrapper code {
+  padding: 0;
+  border-radius: 0;
+  background-color: transparent;
+  border: none;
+  font-size: inherit;
+}
+
+/* Specific selectors for inline code in various contexts */
 .markdown-content p > code,
 .markdown-content li > code,
 .markdown-content th > code,
