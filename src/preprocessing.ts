@@ -58,7 +58,8 @@ function maskInlineMath(src: string) {
 
 function unmaskCodeSegments(src: string, masks: Record<string, string>) {
   for (const [k, v] of Object.entries(masks)) {
-    src = src.replace(new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), v);
+    const pattern = new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    src = src.replace(pattern, () => v);
   }
   return src;
 }
@@ -78,6 +79,9 @@ export const preprocessMarkdown = (content: string): string => {
     //    This is critical for preserving $ symbols in Mermaid, PlantUML, and other code blocks
     const { masked, masks } = maskCodeSegments(processed);
     processed = masked;
+    
+    // Convert HTML <br> tags into newline characters so they render like real line breaks
+    processed = processed.replace(/<br\s*\/?>/gi, '\n');
     
     // 0.5) Process currency BEFORE masking inline math to avoid conflicts
     //      Temporarily replace currency with placeholders
@@ -206,6 +210,19 @@ export const preprocessMarkdown = (content: string): string => {
       }
     );
 
+    // 2.5) Escape stray double-dollar markers that appear inline with text and have no closing pair
+    processed = processed
+      .split('\n')
+      .map((line) => {
+        const firstIndex = line.indexOf('$$');
+        if (firstIndex === -1) return line;
+        if (line.trim() === '$$') return line; // display math fence on its own line
+        const secondIndex = line.indexOf('$$', firstIndex + 2);
+        if (secondIndex !== -1) return line; // already has a matching pair on the same line
+        return line.replace('$$', '\\$\\$');
+      })
+      .join('\n');
+
     // 3) Restore currency placeholders BUT escape the leading '$' so remark-math won't pair them
     //    This is the key to allowing $…$ math while keeping $ amounts literal.
     currencyMap.forEach((original, ph) => {
@@ -238,4 +255,3 @@ export const containsMathNotation = (text: string): boolean => {
   ];
   return patterns.some((re) => re.test(withoutCurrency));
 };
-

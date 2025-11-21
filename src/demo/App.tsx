@@ -139,6 +139,7 @@ Try:
 - Math: $x^2 + y^2 = z^2$ or $$\int_0^1 x dx$$
 - Chemistry: $\ce{H2O}$ or $\ce{CO2}$
 - Currency: $100, $1,234.56
+- HTML breaks: Why don't skeletons fight each other?<br>They don't have the guts.
 - Code blocks with ```
 - Tables with | syntax |"
                 rows={10}

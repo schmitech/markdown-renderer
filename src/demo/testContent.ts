@@ -29,6 +29,24 @@ Here's a [link to Google](https://google.com) and some \`inline code\`.
 Horizontal rule above.`
   },
   {
+    title: 'HTML Line Breaks',
+    content: `## Testing HTML Break Tags
+
+Standard joke with inline HTML:
+Why don't skeletons fight each other?<br>They don't have the guts.
+
+Multiple sequential breaks in a paragraph:
+First line<br/>Second line<br />Third line
+
+Numbered instructions using breaks instead of markdown:
+1)<br>Gather supplies
+2)<br>Build the prototype
+3)<br>Celebrate the win
+
+Mixed content with bold text and breaks:
+**Reminder:** Ship the feature by EOD.<br><br>Escalate if blocked.`
+  },
+  {
     title: 'Code Blocks',
     content: `## Code Examples
 
