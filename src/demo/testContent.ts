@@ -461,6 +461,43 @@ pie title Project Budget Distribution
 \`\`\``
   },
   {
+    title: 'Music Notation (ABC)',
+    content: `## ABC Music Notation Examples
+
+### ABC Notation - Simple Example
+\`\`\`abc
+X:1
+T:Little Study in C
+M:4/4
+L:1/4
+K:C
+C D E F | G G E E | D C D E | C2 C2 |
+\`\`\`
+
+### ABC Notation - More Complex Example
+\`\`\`abc
+X:2
+T:Amazing Grace
+M:3/4
+L:1/8
+K:G
+G2 GA B2 | c2 B2 A2 | G2 GA B2 | A4 G2 |
+G2 GA B2 | c2 B2 A2 | G4 z2 |]
+\`\`\`
+
+### Using the 'music' Language Identifier
+You can also use \`music\` as the language identifier for ABC notation:
+
+\`\`\`music
+X:3
+T:Test Tune
+M:4/4
+K:C
+C D E F G A B c |
+\`\`\`
+`,
+  },
+  {
     title: 'Charts and Data Visualization',
     content: `## Interactive Charts
 

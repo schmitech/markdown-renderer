@@ -37,6 +37,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   enablePlantUML = true,
   enableSVG = true,
   enableCharts = true,
+  enableMusic = true,
   plantUMLServerUrl,
   enableSyntaxHighlighting = true,
   syntaxTheme = 'dark',
@@ -96,6 +97,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           enablePlantUML={enablePlantUML}
           enableSVG={enableSVG}
           enableCharts={enableCharts}
+          enableMusic={enableMusic}
           plantUMLServerUrl={plantUMLServerUrl}
           enableSyntaxHighlighting={enableSyntaxHighlighting}
           syntaxTheme={syntaxTheme}

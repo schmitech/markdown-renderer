@@ -30,6 +30,13 @@ export interface ChartRendererProps {
   language: string;
 }
 
+/**
+ * Props for music notation renderer
+ */
+export interface MusicRendererProps {
+  code: string;
+}
+
 export type ChartValueFormat = 'number' | 'compact' | 'currency' | 'percent';
 
 export interface ChartFormatterConfig {
@@ -129,6 +136,10 @@ export interface MarkdownRendererProps {
    * Enable chart rendering (default: true)
    */
   enableCharts?: boolean;
+  /**
+   * Enable music notation rendering (default: true)
+   */
+  enableMusic?: boolean;
 }
 
 /**
@@ -144,6 +155,7 @@ export interface CodeBlockProps {
   enablePlantUML?: boolean;
   enableSVG?: boolean;
   enableCharts?: boolean;
+  enableMusic?: boolean;
   plantUMLServerUrl?: string;
   enableSyntaxHighlighting?: boolean;
   syntaxTheme?: 'dark' | 'light';

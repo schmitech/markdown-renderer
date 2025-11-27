@@ -5,6 +5,7 @@ import { MermaidRenderer } from './renderers/MermaidRenderer';
 import { PlantUMLRenderer } from './renderers/PlantUMLRenderer';
 import { SVGRenderer } from './renderers/SVGRenderer';
 import { ChartRenderer } from './renderers/ChartRenderer';
+import { MusicRenderer } from './renderers/MusicRenderer';
 import type { CodeBlockProps } from './types';
 
 // Copy button component for code blocks
@@ -67,6 +68,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   enablePlantUML = true,
   enableSVG = true,
   enableCharts = true,
+  enableMusic = true,
   plantUMLServerUrl,
   enableSyntaxHighlighting = true,
   syntaxTheme = 'dark',
@@ -84,6 +86,11 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   // Route to chart renderer (if enabled)
   if (enableCharts && (language === 'chart' || language === 'chart-json' || language === 'chart-table')) {
     return <ChartRenderer code={code} language={language} />;
+  }
+
+  // Route to music notation renderer (if enabled) - ABC notation only
+  if (enableMusic && (language === 'abc' || language === 'music')) {
+    return <MusicRenderer code={code} />;
   }
 
   // Route to graph renderers (if enabled)
