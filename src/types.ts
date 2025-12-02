@@ -72,6 +72,7 @@ export interface ChartConfig {
   data: any[];
   dataKeys?: string[];
   xKey?: string;
+  xAxisType?: 'category' | 'number';
   colors?: string[];
   width?: number;
   height?: number;

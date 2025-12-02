@@ -41,6 +41,31 @@ export const DEFAULT_COLORS = [
   '#ef4444',
 ];
 
+const MONTH_ABBREVIATIONS: Record<string, string> = {
+  january: 'Jan',
+  february: 'Feb',
+  march: 'Mar',
+  april: 'Apr',
+  may: 'May',
+  june: 'Jun',
+  july: 'Jul',
+  august: 'Aug',
+  september: 'Sep',
+  october: 'Oct',
+  november: 'Nov',
+  december: 'Dec',
+};
+
+const CHART_THEME_VARS = {
+  axis: 'var(--md-chart-axis, #374151)',
+  grid: 'var(--md-chart-grid, #e5e7eb)',
+  text: 'var(--md-chart-text, #000000)',
+  tooltipBg: 'var(--md-chart-tooltip-bg, #ffffff)',
+  tooltipBorder: 'var(--md-chart-tooltip-border, #ccc)',
+  tooltipText: 'var(--md-chart-tooltip-text, #000000)',
+  secondaryText: 'var(--md-text-secondary, #4b5563)',
+} as const;
+
 type PartialChartConfig = Partial<ChartConfig> & {
   labels?: string[];
 };
@@ -159,6 +184,9 @@ const applyConfigLine = (config: PartialChartConfig, key: string, rawValue: stri
     }
     case 'xkey':
       config.xKey = value;
+      return;
+    case 'xaxistype':
+      config.xAxisType = value === 'number' ? 'number' : 'category';
       return;
     case 'valueformat': {
       const formatter = ensureFormatter();
@@ -300,6 +328,17 @@ export const parseChartConfig = (code: string, language: string): ChartConfig | 
     console.error('Failed to parse chart config:', err);
     return null;
   }
+};
+
+const inferXAxisTypeFromData = (data: any[], xKey?: string): 'category' | 'number' => {
+  if (!Array.isArray(data) || !data.length) return 'category';
+  const key = xKey || 'name';
+  const values = data
+    .map((item) => (item && typeof item === 'object' ? item[key] : undefined))
+    .filter((value) => typeof value !== 'undefined');
+  if (!values.length) return 'category';
+  const allNumbers = values.every((value) => typeof value === 'number' && !Number.isNaN(value));
+  return allNumbers ? 'number' : 'category';
 };
 
 const formatValue = (value: unknown, formatter?: ChartFormatterConfig) => {
@@ -445,7 +484,7 @@ const renderYAxisLabel = (value: string | undefined, orientation: 'left' | 'righ
       value={value}
       angle={orientation === 'right' ? 90 : -90}
       position={position}
-      style={{ textAnchor: 'middle', fill: 'var(--md-chart-axis, #374151)', fontSize: 12, fontWeight: 500 }}
+      style={{ textAnchor: 'middle', fill: CHART_THEME_VARS.axis, fontSize: 12, fontWeight: 500 }}
       offset={offset}
     />
   );
@@ -720,27 +759,61 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
 
   // Use CSS custom properties for theme-aware styling
   // These will be read from the computed styles of the container
+  const axisColor = CHART_THEME_VARS.axis;
+  const gridColor = CHART_THEME_VARS.grid;
+  const textColor = CHART_THEME_VARS.text;
+  const tooltipTextColor = CHART_THEME_VARS.tooltipText;
+  const tooltipBgColor = CHART_THEME_VARS.tooltipBg;
+  const tooltipBorderColor = CHART_THEME_VARS.tooltipBorder;
+  const secondaryTextColor = CHART_THEME_VARS.secondaryText;
+  const legendWrapperStyle = {
+    color: textColor,
+    paddingTop: '12px',
+  };
+  const axisStylingProps = {
+    tick: { fill: axisColor },
+    axisLine: { stroke: axisColor },
+    tickLine: { stroke: axisColor },
+  };
+  const xAxisType =
+    config.xAxisType ??
+    (config.type === 'scatter' ? 'number' : inferXAxisTypeFromData(config.data, config.xKey));
+  const isCategoryXAxis = xAxisType === 'category';
+  const categoricalXAxisProps = {
+    type: 'category' as const,
+    scale: 'band' as const,
+    interval: 0 as const,
+    allowDuplicatedCategory: false,
+    padding: { left: 16, right: 16 },
+  };
+  const numericXAxisProps = {
+    type: 'number' as const,
+    domain: ['dataMin', 'dataMax'] as const,
+    allowDuplicatedCategory: true,
+  };
+  const xAxisProps = isCategoryXAxis ? categoricalXAxisProps : numericXAxisProps;
+
   const tooltipStyle = {
-    backgroundColor: 'var(--md-chart-tooltip-bg, #ffffff)',
-    border: '1px solid var(--md-chart-tooltip-border, #ccc)',
+    backgroundColor: tooltipBgColor,
+    border: `1px solid ${tooltipBorderColor}`,
     borderRadius: '4px',
     padding: '8px',
-    color: 'var(--md-chart-tooltip-text, #000000)',
+    color: tooltipTextColor,
   };
 
   const tooltipLabelStyle = {
-    color: 'var(--md-chart-tooltip-text, #000000)',
+    color: tooltipTextColor,
     fontWeight: 600,
     marginBottom: '4px',
   };
 
   const tooltipItemStyle = {
-    color: 'var(--md-chart-tooltip-text, #000000)',
+    color: tooltipTextColor,
   };
 
   // Cursor style for hover highlight - semi-transparent for better UX
   const tooltipCursor = {
-    fill: 'var(--md-chart-grid, #e5e7eb)',
+    fill: gridColor,
     fillOpacity: 0.3,
   };
 
@@ -757,7 +830,19 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
     return String(formatted ?? '');
   };
 
-  const xAxisLabel = config.xAxisLabel
+  const formatCategoryLabel = (value: any) => {
+    if (typeof value !== 'string') return String(value ?? '');
+    const normalized = value.trim().toLowerCase();
+    const monthAbbrev = MONTH_ABBREVIATIONS[normalized];
+    if (monthAbbrev) return monthAbbrev;
+    return value;
+  };
+
+  const xAxisTickFormatter = (value: any) =>
+    isCategoryXAxis ? formatCategoryLabel(value) : axisTickFormatter(value);
+
+  const xAxisHasLabel = Boolean(config.xAxisLabel);
+  const xAxisLabel = xAxisHasLabel
     ? {
         value: config.xAxisLabel,
         position: 'insideBottom' as const,
@@ -769,7 +854,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
     left: leftAxisLabelText ? 80 : 10,
     right: rightAxisLabelText ? 80 : 10,
     top: 10,
-    bottom: 20,
+    bottom: 30 + (xAxisHasLabel ? 12 : 0) + (showLegend ? 12 : 0),
   };
 
   return (
@@ -820,7 +905,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
             textAlign: 'center',
             marginBottom: config.description ? '4px' : '12px',
             marginTop: 0,
-            color: 'var(--md-chart-text, #000000)',
+            color: textColor,
             fontWeight: 600,
           }}
         >
@@ -833,7 +918,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
             textAlign: 'center',
             marginTop: 0,
             marginBottom: '12px',
-            color: 'var(--md-text-secondary, #4b5563)',
+            color: secondaryTextColor,
             fontSize: '0.9rem',
           }}
         >
@@ -842,10 +927,21 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
       )}
       <ResponsiveContainer width="100%" height={height}>
         {config.type === 'bar' && (
-          <BarChart data={config.data} margin={chartMargin}>
-            {showGrid && <CartesianGrid strokeDasharray="3 3" />}
-            <XAxis dataKey={config.xKey || 'name'} label={xAxisLabel} />
-            <YAxis yAxisId="left" width={80} tickFormatter={axisTickFormatter}>
+          <BarChart data={config.data} margin={chartMargin} barCategoryGap="20%">
+            {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />}
+            <XAxis
+              dataKey={config.xKey || 'name'}
+              label={xAxisLabel}
+              {...axisStylingProps}
+              {...xAxisProps}
+              tickFormatter={xAxisTickFormatter}
+            />
+            <YAxis
+              yAxisId="left"
+              width={80}
+              tickFormatter={axisTickFormatter}
+              {...axisStylingProps}
+            >
               {renderYAxisLabel(leftAxisLabelText, 'left')}
             </YAxis>
             {hasRightAxis && (
@@ -854,6 +950,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
                 orientation="right"
                 width={80}
                 tickFormatter={axisTickFormatter}
+                {...axisStylingProps}
               >
                 {renderYAxisLabel(rightAxisLabelText, 'right')}
               </YAxis>
@@ -865,7 +962,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               formatter={tooltipFormatter}
               cursor={tooltipCursor}
             />
-            {showLegend && <Legend />}
+            {showLegend && <Legend wrapperStyle={legendWrapperStyle} />}
             {referenceLineElements}
             {derivedSeries.map((series) => (
               <Bar
@@ -883,9 +980,20 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
 
         {config.type === 'line' && (
           <LineChart data={config.data} margin={chartMargin}>
-            {showGrid && <CartesianGrid strokeDasharray="3 3" />}
-            <XAxis dataKey={config.xKey || 'name'} label={xAxisLabel} />
-            <YAxis yAxisId="left" width={80} tickFormatter={axisTickFormatter}>
+            {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />}
+            <XAxis
+              dataKey={config.xKey || 'name'}
+              label={xAxisLabel}
+              {...axisStylingProps}
+              {...xAxisProps}
+              tickFormatter={xAxisTickFormatter}
+            />
+            <YAxis
+              yAxisId="left"
+              width={80}
+              tickFormatter={axisTickFormatter}
+              {...axisStylingProps}
+            >
               {renderYAxisLabel(leftAxisLabelText, 'left')}
             </YAxis>
             {hasRightAxis && (
@@ -894,6 +1002,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
                 orientation="right"
                 width={80}
                 tickFormatter={axisTickFormatter}
+                {...axisStylingProps}
               >
                 {renderYAxisLabel(rightAxisLabelText, 'right')}
               </YAxis>
@@ -905,7 +1014,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               formatter={tooltipFormatter}
               cursor={tooltipCursor}
             />
-            {showLegend && <Legend />}
+            {showLegend && <Legend wrapperStyle={legendWrapperStyle} />}
             {referenceLineElements}
             {derivedSeries.map((series) => (
               <Line
@@ -924,9 +1033,20 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
 
         {config.type === 'area' && (
           <AreaChart data={config.data} margin={chartMargin}>
-            {showGrid && <CartesianGrid strokeDasharray="3 3" />}
-            <XAxis dataKey={config.xKey || 'name'} label={xAxisLabel} />
-            <YAxis yAxisId="left" width={80} tickFormatter={axisTickFormatter}>
+            {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />}
+            <XAxis
+              dataKey={config.xKey || 'name'}
+              label={xAxisLabel}
+              {...axisStylingProps}
+              {...xAxisProps}
+              tickFormatter={xAxisTickFormatter}
+            />
+            <YAxis
+              yAxisId="left"
+              width={80}
+              tickFormatter={axisTickFormatter}
+              {...axisStylingProps}
+            >
               {renderYAxisLabel(leftAxisLabelText, 'left')}
             </YAxis>
             {hasRightAxis && (
@@ -935,6 +1055,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
                 orientation="right"
                 width={80}
                 tickFormatter={axisTickFormatter}
+                {...axisStylingProps}
               >
                 {renderYAxisLabel(rightAxisLabelText, 'right')}
               </YAxis>
@@ -946,7 +1067,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               formatter={tooltipFormatter}
               cursor={tooltipCursor}
             />
-            {showLegend && <Legend />}
+            {showLegend && <Legend wrapperStyle={legendWrapperStyle} />}
             {referenceLineElements}
             {derivedSeries.map((series) => (
               <Area
@@ -966,9 +1087,20 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
 
         {config.type === 'composed' && (
           <ComposedChart data={config.data} margin={chartMargin}>
-            {showGrid && <CartesianGrid strokeDasharray="3 3" />}
-            <XAxis dataKey={config.xKey || 'name'} label={xAxisLabel} />
-            <YAxis yAxisId="left" width={80} tickFormatter={axisTickFormatter}>
+            {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />}
+            <XAxis
+              dataKey={config.xKey || 'name'}
+              label={xAxisLabel}
+              {...axisStylingProps}
+              {...xAxisProps}
+              tickFormatter={xAxisTickFormatter}
+            />
+            <YAxis
+              yAxisId="left"
+              width={80}
+              tickFormatter={axisTickFormatter}
+              {...axisStylingProps}
+            >
               {renderYAxisLabel(leftAxisLabelText, 'left')}
             </YAxis>
             {hasRightAxis && (
@@ -977,6 +1109,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
                 orientation="right"
                 width={80}
                 tickFormatter={axisTickFormatter}
+                {...axisStylingProps}
               >
                 {renderYAxisLabel(rightAxisLabelText, 'right')}
               </YAxis>
@@ -988,7 +1121,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               formatter={tooltipFormatter}
               cursor={tooltipCursor}
             />
-            {showLegend && <Legend />}
+            {showLegend && <Legend wrapperStyle={legendWrapperStyle} />}
             {referenceLineElements}
             {derivedSeries.map((series) => {
               switch (series.type) {
@@ -1055,7 +1188,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               cx="50%"
               cy="50%"
               outerRadius={height / 3}
-              label
+              label={{ fill: textColor }}
             >
               {config.data.map((_: unknown, index: number) => (
                 <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
@@ -1066,18 +1199,25 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               itemStyle={tooltipItemStyle}
               formatter={tooltipFormatter}
             />
-            {showLegend && <Legend />}
+            {showLegend && <Legend wrapperStyle={legendWrapperStyle} />}
           </PieChart>
         )}
 
         {config.type === 'scatter' && (
           <ScatterChart margin={chartMargin}>
-            {showGrid && <CartesianGrid strokeDasharray="3 3" />}
-            <XAxis dataKey={config.xKey || 'x'} label={xAxisLabel} />
+            {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />}
+            <XAxis
+              dataKey={config.xKey || 'x'}
+              label={xAxisLabel}
+              {...axisStylingProps}
+              {...xAxisProps}
+              tickFormatter={xAxisTickFormatter}
+            />
             <YAxis
               dataKey={config.dataKeys?.[0] || 'y'}
               width={80}
               tickFormatter={axisTickFormatter}
+              {...axisStylingProps}
             >
               {renderYAxisLabel(leftAxisLabelText, 'left')}
             </YAxis>
@@ -1088,7 +1228,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               formatter={tooltipFormatter}
               cursor={tooltipCursor}
             />
-            {showLegend && <Legend />}
+            {showLegend && <Legend wrapperStyle={legendWrapperStyle} />}
             {referenceLineElements}
             <Scatter name="Data" data={config.data} fill={colors[0]} />
           </ScatterChart>
