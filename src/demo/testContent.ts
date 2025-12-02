@@ -884,8 +884,415 @@ This test case should demonstrate:
 - ✅ Mixed long content scrolls properly
 - ✅ The page remains usable even with very long content
 - ✅ No content is truncated or cut off`
+  },
+  {
+    title: 'Robust Charts Test',
+    content: `## Robust Chart Rendering Test
+
+This test case validates that charts render correctly with complete data sets. It tests various chart types and configurations that should always render fully.
+
+### Line Chart - Revenue Trend
+
+\`\`\`chart
+type: line
+title: Monthly Revenue Trend
+description: Single metric line chart showing revenue over 12 months
+showLegend: false
+xAxisLabel: Month
+yAxisLabel: Revenue ($)
+formatter: {"format":"currency","currency":"USD","minimumFractionDigits":0}
+| Month | Revenue |
+|-------|---------|
+| January | 15234 |
+| February | 14567 |
+| March | 16789 |
+| April | 14052 |
+| May | 18234 |
+| June | 19567 |
+| July | 17234 |
+| August | 14789 |
+| September | 16123 |
+| October | 19012 |
+| November | 22345 |
+| December | 25678 |
+\`\`\`
+
+### Multi-Metric Chart with Dual Axes
+
+When you have metrics with different scales (e.g., revenue in thousands vs order count in hundreds), use a composed chart with dual Y-axes:
+
+\`\`\`chart
+type: composed
+title: E-commerce Performance Overview
+description: Revenue on left axis, order metrics on right axis
+showLegend: true
+xAxisLabel: Month
+yAxisLabel: Revenue ($)
+yAxisRightLabel: Count
+series: [
+  {"key":"Revenue","type":"area","name":"Revenue ($)","color":"#3b82f6","opacity":0.3},
+  {"key":"Orders","type":"line","name":"Total Orders","color":"#10b981","yAxisId":"right","strokeWidth":2},
+  {"key":"Customers","type":"line","name":"Unique Customers","color":"#f59e0b","yAxisId":"right","strokeWidth":2}
+]
+| Month | Revenue | Orders | Customers |
+|-------|---------|--------|-----------|
+| January | 15234 | 156 | 142 |
+| February | 14567 | 143 | 128 |
+| March | 16789 | 168 | 155 |
+| April | 14052 | 125 | 118 |
+| May | 18234 | 189 | 172 |
+| June | 19567 | 201 | 185 |
+| July | 17234 | 178 | 163 |
+| August | 14789 | 145 | 132 |
+| September | 16123 | 167 | 154 |
+| October | 19012 | 198 | 181 |
+| November | 22345 | 223 | 205 |
+| December | 25678 | 256 | 234 |
+\`\`\`
+
+### Multi-Line Chart (Similar Scales)
+
+For metrics with similar scales, a regular line chart works well:
+
+\`\`\`chart
+type: line
+title: Order Metrics Comparison
+description: Comparing orders vs unique customers (similar scale)
+showLegend: true
+xAxisLabel: Month
+yAxisLabel: Count
+| Month | Total Orders | Unique Customers |
+|-------|--------------|------------------|
+| January | 156 | 142 |
+| February | 143 | 128 |
+| March | 168 | 155 |
+| April | 125 | 118 |
+| May | 189 | 172 |
+| June | 201 | 185 |
+| July | 178 | 163 |
+| August | 145 | 132 |
+| September | 167 | 154 |
+| October | 198 | 181 |
+| November | 223 | 205 |
+| December | 256 | 234 |
+\`\`\`
+
+### Bar Chart with Multiple Series
+
+\`\`\`chart
+type: bar
+title: Quarterly Revenue by Region
+description: Regional performance comparison across all quarters
+showLegend: true
+stacked: false
+| Quarter | North America | Europe | Asia Pacific | Latin America |
+|---------|---------------|--------|--------------|---------------|
+| Q1 2024 | 125000 | 95000 | 78000 | 45000 |
+| Q2 2024 | 145000 | 110000 | 92000 | 52000 |
+| Q3 2024 | 132000 | 102000 | 85000 | 48000 |
+| Q4 2024 | 168000 | 125000 | 105000 | 62000 |
+\`\`\`
+
+### Stacked Area Chart
+
+\`\`\`chart
+type: area
+title: Traffic Sources Over Time
+description: Breakdown of website traffic by source
+showLegend: true
+stacked: true
+| Week | Organic | Paid | Social | Direct | Referral |
+|------|---------|------|--------|--------|----------|
+| W1 | 12000 | 8000 | 5000 | 4000 | 2000 |
+| W2 | 14000 | 9500 | 6200 | 4200 | 2300 |
+| W3 | 13500 | 8800 | 5800 | 4500 | 2100 |
+| W4 | 15000 | 10000 | 6500 | 4800 | 2500 |
+| W5 | 16500 | 11000 | 7000 | 5000 | 2800 |
+| W6 | 18000 | 12000 | 7500 | 5200 | 3000 |
+\`\`\`
+
+### Pie Chart
+
+\`\`\`chart
+type: pie
+title: Market Share by Product Category
+data: [35, 28, 22, 10, 5]
+labels: [Electronics, Clothing, Home & Garden, Sports, Other]
+colors: [#3b82f6, #8b5cf6, #ec4899, #10b981, #f59e0b]
+\`\`\`
+
+### Composed Chart with Dual Axis
+
+\`\`\`chart
+type: composed
+title: Revenue vs Profit Margin Analysis
+description: Comparing absolute revenue with percentage margins
+showLegend: true
+series: [
+  {"key":"Revenue","type":"bar","name":"Revenue ($K)","color":"#3b82f6"},
+  {"key":"Cost","type":"bar","name":"Cost ($K)","color":"#ef4444"},
+  {"key":"Margin","type":"line","name":"Profit Margin (%)","color":"#10b981","yAxisId":"right","strokeWidth":3}
+]
+yAxisLabel: Amount ($K)
+yAxisRightLabel: Margin (%)
+| Product | Revenue | Cost | Margin |
+|---------|---------|------|--------|
+| Product A | 150 | 95 | 36.7 |
+| Product B | 220 | 130 | 40.9 |
+| Product C | 180 | 120 | 33.3 |
+| Product D | 280 | 155 | 44.6 |
+| Product E | 120 | 85 | 29.2 |
+\`\`\`
+
+### Scatter Plot
+
+\`\`\`chart
+type: scatter
+title: Customer Satisfaction vs Retention Rate
+description: Each point represents a customer segment
+showGrid: true
+xKey: Satisfaction
+xAxisLabel: Satisfaction Score (1-10)
+yAxisLabel: Retention Rate (%)
+| Satisfaction | Retention |
+|--------------|-----------|
+| 3.2 | 45 |
+| 4.5 | 52 |
+| 5.8 | 61 |
+| 6.2 | 68 |
+| 7.1 | 75 |
+| 7.8 | 82 |
+| 8.5 | 88 |
+| 9.0 | 92 |
+| 9.4 | 95 |
+\`\`\`
+
+### Chart with Reference Lines
+
+\`\`\`chart
+type: bar
+title: Monthly Sales vs Target
+description: Showing actual sales against quarterly targets
+showLegend: true
+formatter: {"format":"currency","currency":"USD","minimumFractionDigits":0}
+referenceLines: [{"y":75000,"label":"Q1 Target","color":"#ef4444","strokeDasharray":"6 3"},{"y":85000,"label":"Q2 Target","color":"#f59e0b","strokeDasharray":"6 3"}]
+| Month | Sales |
+|-------|-------|
+| Jan | 65000 |
+| Feb | 72000 |
+| Mar | 81000 |
+| Apr | 78000 |
+| May | 88000 |
+| Jun | 92000 |
+\`\`\`
+
+### Expected Behavior
+
+All charts above should:
+- ✅ Display complete X-axis labels (no missing months/quarters)
+- ✅ Show all data points connected properly
+- ✅ Display legends when enabled
+- ✅ Show tooltips on hover
+- ✅ Render smoothly without flickering
+- ✅ Handle window resize gracefully`
   }
 ];
+
+// Streaming chart test data - simulates partial data arriving from LLM
+export const streamingChartStages = {
+  title: 'Chart Streaming Simulation',
+  stages: [
+    // Stage 1: Just the type and title
+    `\`\`\`chart
+type: line
+title: Monthly E-commerce Metrics
+| Month |`,
+    // Stage 2: Partial header
+    `\`\`\`chart
+type: line
+title: Monthly E-commerce Metrics
+| Month | Total Orders | Total Revenue |`,
+    // Stage 3: Complete header with separator
+    `\`\`\`chart
+type: line
+title: Monthly E-commerce Metrics
+| Month | Total Orders | Total Revenue | Average Order Value | Unique Customers |
+|-------|--------------|---------------|---------------------|------------------|`,
+    // Stage 4: First two rows
+    `\`\`\`chart
+type: line
+title: Monthly E-commerce Metrics
+| Month | Total Orders | Total Revenue | Average Order Value | Unique Customers |
+|-------|--------------|---------------|---------------------|------------------|
+| January | 156 | 15234.50 | 548.23 | 142 |
+| February | 143 | 14567.80 | 512.67 | 128 |`,
+    // Stage 5: Partial third row (incomplete)
+    `\`\`\`chart
+type: line
+title: Monthly E-commerce Metrics
+| Month | Total Orders | Total Revenue | Average Order Value | Unique Customers |
+|-------|--------------|---------------|---------------------|------------------|
+| January | 156 | 15234.50 | 548.23 | 142 |
+| February | 143 | 14567.80 | 512.67 | 128 |
+| March | 168 | 16789.25 |`,
+    // Stage 6: More rows
+    `\`\`\`chart
+type: line
+title: Monthly E-commerce Metrics
+| Month | Total Orders | Total Revenue | Average Order Value | Unique Customers |
+|-------|--------------|---------------|---------------------|------------------|
+| January | 156 | 15234.50 | 548.23 | 142 |
+| February | 143 | 14567.80 | 512.67 | 128 |
+| March | 168 | 16789.25 | 578.45 | 155 |
+| April | 125 | 14052.14 | 562.09 | 118 |`,
+    // Stage 7: Complete data
+    `\`\`\`chart
+type: line
+title: Monthly E-commerce Metrics
+showLegend: true
+| Month | Total Orders | Total Revenue | Average Order Value | Unique Customers |
+|-------|--------------|---------------|---------------------|------------------|
+| January | 156 | 15234.50 | 548.23 | 142 |
+| February | 143 | 14567.80 | 512.67 | 128 |
+| March | 168 | 16789.25 | 578.45 | 155 |
+| April | 125 | 14052.14 | 562.09 | 118 |
+| May | 189 | 18234.67 | 601.23 | 172 |
+| June | 201 | 19567.89 | 623.45 | 185 |
+| July | 178 | 17234.56 | 589.12 | 163 |
+| August | 145 | 14789.34 | 545.67 | 132 |
+| September | 167 | 16123.45 | 567.89 | 154 |
+| October | 198 | 19012.34 | 612.34 | 181 |
+| November | 223 | 22345.67 | 645.78 | 205 |
+| December | 256 | 25678.90 | 678.90 | 234 |
+\`\`\``,
+  ],
+  // Full final content for comparison
+  finalContent: `## Chart Streaming Test - Complete
+
+This test demonstrates how charts handle streaming data from an LLM. The chart should:
+- Show a loading indicator while data is incomplete
+- Debounce rapid updates to prevent flickering
+- Render smoothly once all data arrives
+
+### Monthly E-commerce Metrics
+
+\`\`\`chart
+type: line
+title: Monthly E-commerce Metrics
+description: Tracking key e-commerce KPIs across the year
+showLegend: true
+xAxisLabel: Month
+yAxisLabel: Value
+| Month | Total Orders | Total Revenue | Average Order Value | Unique Customers |
+|-------|--------------|---------------|---------------------|------------------|
+| January | 156 | 15234.50 | 548.23 | 142 |
+| February | 143 | 14567.80 | 512.67 | 128 |
+| March | 168 | 16789.25 | 578.45 | 155 |
+| April | 125 | 14052.14 | 562.09 | 118 |
+| May | 189 | 18234.67 | 601.23 | 172 |
+| June | 201 | 19567.89 | 623.45 | 185 |
+| July | 178 | 17234.56 | 589.12 | 163 |
+| August | 145 | 14789.34 | 545.67 | 132 |
+| September | 167 | 16123.45 | 567.89 | 154 |
+| October | 198 | 19012.34 | 612.34 | 181 |
+| November | 223 | 22345.67 | 645.78 | 205 |
+| December | 256 | 25678.90 | 678.90 | 234 |
+\`\`\`
+
+### Bar Chart with Multiple Series
+
+\`\`\`chart
+type: bar
+title: Quarterly Revenue by Region
+description: Regional performance comparison
+showLegend: true
+stacked: false
+| Quarter | North America | Europe | Asia Pacific | Latin America |
+|---------|---------------|--------|--------------|---------------|
+| Q1 | 125000 | 95000 | 78000 | 45000 |
+| Q2 | 145000 | 110000 | 92000 | 52000 |
+| Q3 | 132000 | 102000 | 85000 | 48000 |
+| Q4 | 168000 | 125000 | 105000 | 62000 |
+\`\`\`
+
+### Pie Chart Distribution
+
+\`\`\`chart
+type: pie
+title: Market Share by Product Category
+data: [35, 28, 22, 15]
+labels: [Electronics, Clothing, Home & Garden, Sports]
+colors: [#3b82f6, #8b5cf6, #ec4899, #10b981]
+\`\`\`
+`,
+};
+
+// Test case for multiple charts updating simultaneously
+export const multiChartStreamingContent = `## Multiple Charts - Streaming Stress Test
+
+This tests multiple charts rendering simultaneously, which is common when an LLM returns a comprehensive analysis.
+
+### Revenue Trend
+
+\`\`\`chart
+type: area
+title: Monthly Revenue Trend
+showLegend: true
+| Month | Revenue | Projected |
+|-------|---------|-----------|
+| Jan | 45000 | 42000 |
+| Feb | 52000 | 48000 |
+| Mar | 48000 | 50000 |
+| Apr | 61000 | 55000 |
+| May | 55000 | 58000 |
+| Jun | 67000 | 62000 |
+\`\`\`
+
+### Customer Segmentation
+
+\`\`\`chart
+type: pie
+title: Customer Segments
+data: [40, 30, 20, 10]
+labels: [Enterprise, SMB, Consumer, Government]
+\`\`\`
+
+### Product Performance
+
+\`\`\`chart
+type: bar
+title: Product Category Performance
+stacked: true
+| Category | Online | Retail | Wholesale |
+|----------|--------|--------|-----------|
+| Electronics | 85000 | 65000 | 45000 |
+| Clothing | 62000 | 78000 | 32000 |
+| Food | 45000 | 92000 | 68000 |
+| Home | 38000 | 55000 | 28000 |
+\`\`\`
+
+### Composed Analysis
+
+\`\`\`chart
+type: composed
+title: Sales vs Conversion Rate
+showLegend: true
+series: [
+  {"key":"Sales","type":"bar","name":"Sales ($)","color":"#3b82f6"},
+  {"key":"Conversion","type":"line","name":"Conversion (%)","color":"#ef4444","yAxisId":"right","strokeWidth":3}
+]
+yAxisLabel: Sales ($)
+yAxisRightLabel: Conversion (%)
+| Month | Sales | Conversion |
+|-------|-------|------------|
+| Jan | 12000 | 2.5 |
+| Feb | 15000 | 3.1 |
+| Mar | 18000 | 3.8 |
+| Apr | 14000 | 2.9 |
+| May | 21000 | 4.2 |
+| Jun | 25000 | 4.8 |
+\`\`\`
+`;
 
 export const stressTestContent = `# Stress Test Content
 

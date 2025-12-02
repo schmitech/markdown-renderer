@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Area,
   AreaChart,
@@ -451,32 +451,131 @@ const renderYAxisLabel = (value: string | undefined, orientation: 'left' | 'righ
   );
 };
 
+// Heuristics to detect if chart data appears incomplete/streaming
+const isLikelyIncomplete = (code: string): boolean => {
+  // Check for incomplete JSON structures
+  const openBraces = (code.match(/\{/g) || []).length;
+  const closeBraces = (code.match(/\}/g) || []).length;
+  const openBrackets = (code.match(/\[/g) || []).length;
+  const closeBrackets = (code.match(/\]/g) || []).length;
+
+  if (openBraces !== closeBraces || openBrackets !== closeBrackets) {
+    return true;
+  }
+
+  // Check for incomplete table rows (line ends with | but has content before it suggesting more columns expected)
+  const lines = code.split('\n');
+  const tableLines = lines.filter(line => line.trim().includes('|'));
+
+  if (tableLines.length >= 2) {
+    // Get header column count
+    const headerLine = tableLines[0];
+    const headerCols = headerLine.split('|').filter(s => s.trim()).length;
+
+    // Check if last data row has fewer columns (excluding separator row)
+    const dataRows = tableLines.filter(line => !line.match(/^\s*\|[-:\s|]+\|\s*$/));
+    if (dataRows.length >= 2) {
+      const lastRow = dataRows[dataRows.length - 1];
+      const lastRowCols = lastRow.split('|').filter(s => s.trim()).length;
+      // Only flag as incomplete if clearly missing columns
+      if (lastRowCols > 0 && lastRowCols < headerCols - 1) {
+        return true;
+      }
+    }
+  }
+
+  // Check for trailing incomplete key-value pairs (key: with nothing after)
+  const lastNonEmptyLine = lines.filter(l => l.trim()).pop() || '';
+  if (lastNonEmptyLine.match(/^\w+:\s*$/) && !lastNonEmptyLine.includes('|')) {
+    return true;
+  }
+
+  return false;
+};
+
 export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) => {
   const [error, setError] = useState<string | null>(null);
   const [config, setConfig] = useState<ChartConfig | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastCodeRef = useRef<string>('');
+  const lastUpdateTimeRef = useRef<number>(0);
 
   useEffect(() => {
+    const now = Date.now();
+    const timeSinceLastUpdate = now - lastUpdateTimeRef.current;
+    const codeChanged = code !== lastCodeRef.current;
+
+    // Update refs
+    lastCodeRef.current = code;
+    lastUpdateTimeRef.current = now;
+
+    // Parse the current code
     const parsed = parseChartConfig(code, language);
+
+    // Validation
     if (!parsed) {
       setConfig(null);
       setError('Failed to parse chart configuration');
+      setIsStreaming(false);
       return;
     }
 
     if (!Array.isArray(parsed.data) || parsed.data.length === 0) {
       setConfig(null);
       setError('Chart data is empty');
+      setIsStreaming(false);
       return;
     }
 
     if (!parsed.type) {
       setConfig(null);
       setError('Chart type is required (bar, line, pie, area, scatter, composed)');
+      setIsStreaming(false);
       return;
     }
 
-    setError(null);
-    setConfig(parsed);
+    // Check if data appears incomplete
+    const incomplete = isLikelyIncomplete(code);
+
+    // Detect rapid updates (streaming) - updates faster than 100ms apart
+    const rapidUpdate = codeChanged && timeSinceLastUpdate < 100 && timeSinceLastUpdate > 0;
+
+    if (incomplete || rapidUpdate) {
+      setIsStreaming(true);
+
+      // Clear any existing debounce timer
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      // Debounce: wait for data to stabilize before final render
+      debounceTimerRef.current = setTimeout(() => {
+        setIsStreaming(false);
+        // Re-parse in case code changed during debounce
+        const finalParsed = parseChartConfig(code, language);
+        if (finalParsed && Array.isArray(finalParsed.data) && finalParsed.data.length > 0) {
+          setError(null);
+          setConfig(finalParsed);
+        }
+      }, 200);
+
+      // Show partial data while streaming (but still set it)
+      setError(null);
+      setConfig(parsed);
+    } else {
+      // Data is complete and not rapidly updating - render immediately
+      setIsStreaming(false);
+      setError(null);
+      setConfig(parsed);
+    }
+
+    // Cleanup
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
   }, [code, language]);
 
   if (error) {
@@ -494,7 +593,33 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
   if (!config) {
     return (
       <div className="graph-container chart-container">
-        <div>Loading chart...</div>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+          color: '#6b7280'
+        }}>
+          <svg
+            style={{
+              animation: 'spin 1s linear infinite',
+              marginRight: '8px',
+              width: '20px',
+              height: '20px'
+            }}
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeDasharray="32" strokeLinecap="round" />
+          </svg>
+          Loading chart...
+        </div>
+        <style>{`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }
@@ -548,7 +673,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
   const xAxisLabel = config.xAxisLabel
     ? {
         value: config.xAxisLabel,
-        position: 'insideBottom',
+        position: 'insideBottom' as const,
         offset: -5,
       }
     : undefined;
@@ -563,8 +688,45 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
   return (
     <div
       className="graph-container chart-container"
-      style={{ flexDirection: 'column', alignItems: 'stretch' }}
+      style={{ flexDirection: 'column', alignItems: 'stretch', position: 'relative' }}
     >
+      {isStreaming && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '8px',
+            right: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            padding: '4px 8px',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            borderRadius: '4px',
+            fontSize: '12px',
+            color: '#3b82f6',
+            zIndex: 10,
+          }}
+        >
+          <svg
+            style={{
+              animation: 'spin 1s linear infinite',
+              marginRight: '4px',
+              width: '12px',
+              height: '12px'
+            }}
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeDasharray="32" strokeLinecap="round" />
+          </svg>
+          Updating...
+          <style>{`
+            @keyframes spin {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      )}
       {config.title && (
         <h4
           style={{
@@ -596,13 +758,14 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
           <BarChart data={config.data} margin={chartMargin}>
             {showGrid && <CartesianGrid strokeDasharray="3 3" />}
             <XAxis dataKey={config.xKey || 'name'} label={xAxisLabel} />
-            <YAxis yAxisId="left" tickFormatter={axisTickFormatter}>
+            <YAxis yAxisId="left" width={80} tickFormatter={axisTickFormatter}>
               {renderYAxisLabel(leftAxisLabelText, 'left')}
             </YAxis>
             {hasRightAxis && (
               <YAxis
                 yAxisId="right"
                 orientation="right"
+                width={80}
                 tickFormatter={axisTickFormatter}
               >
                 {renderYAxisLabel(rightAxisLabelText, 'right')}
@@ -618,6 +781,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
             {referenceLineElements}
             {derivedSeries.map((series) => (
               <Bar
+                name={series.name}
                 key={series.key}
                 dataKey={series.key}
                 fill={series.color}
@@ -633,13 +797,14 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
           <LineChart data={config.data} margin={chartMargin}>
             {showGrid && <CartesianGrid strokeDasharray="3 3" />}
             <XAxis dataKey={config.xKey || 'name'} label={xAxisLabel} />
-            <YAxis yAxisId="left" tickFormatter={axisTickFormatter}>
+            <YAxis yAxisId="left" width={80} tickFormatter={axisTickFormatter}>
               {renderYAxisLabel(leftAxisLabelText, 'left')}
             </YAxis>
             {hasRightAxis && (
               <YAxis
                 yAxisId="right"
                 orientation="right"
+                width={80}
                 tickFormatter={axisTickFormatter}
               >
                 {renderYAxisLabel(rightAxisLabelText, 'right')}
@@ -655,6 +820,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
             {referenceLineElements}
             {derivedSeries.map((series) => (
               <Line
+                name={series.name}
                 key={series.key}
                 type="monotone"
                 dataKey={series.key}
@@ -671,13 +837,14 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
           <AreaChart data={config.data} margin={chartMargin}>
             {showGrid && <CartesianGrid strokeDasharray="3 3" />}
             <XAxis dataKey={config.xKey || 'name'} label={xAxisLabel} />
-            <YAxis yAxisId="left" tickFormatter={axisTickFormatter}>
+            <YAxis yAxisId="left" width={80} tickFormatter={axisTickFormatter}>
               {renderYAxisLabel(leftAxisLabelText, 'left')}
             </YAxis>
             {hasRightAxis && (
               <YAxis
                 yAxisId="right"
                 orientation="right"
+                width={80}
                 tickFormatter={axisTickFormatter}
               >
                 {renderYAxisLabel(rightAxisLabelText, 'right')}
@@ -693,6 +860,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
             {referenceLineElements}
             {derivedSeries.map((series) => (
               <Area
+                name={series.name}
                 key={series.key}
                 type="monotone"
                 dataKey={series.key}
@@ -710,13 +878,14 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
           <ComposedChart data={config.data} margin={chartMargin}>
             {showGrid && <CartesianGrid strokeDasharray="3 3" />}
             <XAxis dataKey={config.xKey || 'name'} label={xAxisLabel} />
-            <YAxis yAxisId="left" tickFormatter={axisTickFormatter}>
+            <YAxis yAxisId="left" width={80} tickFormatter={axisTickFormatter}>
               {renderYAxisLabel(leftAxisLabelText, 'left')}
             </YAxis>
             {hasRightAxis && (
               <YAxis
                 yAxisId="right"
                 orientation="right"
+                width={80}
                 tickFormatter={axisTickFormatter}
               >
                 {renderYAxisLabel(rightAxisLabelText, 'right')}
@@ -735,6 +904,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
                 case 'line':
                   return (
                     <Line
+                      name={series.name}
                       key={series.key}
                       type="monotone"
                       dataKey={series.key}
@@ -747,6 +917,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
                 case 'area':
                   return (
                     <Area
+                      name={series.name}
                       key={series.key}
                       type="monotone"
                       dataKey={series.key}
@@ -760,6 +931,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
                 case 'scatter':
                   return (
                     <Scatter
+                      name={series.name}
                       key={series.key}
                       dataKey={series.key}
                       fill={series.color}
@@ -769,6 +941,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
                 default:
                   return (
                     <Bar
+                      name={series.name}
                       key={series.key}
                       dataKey={series.key}
                       fill={series.color}
@@ -812,6 +985,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
             <XAxis dataKey={config.xKey || 'x'} label={xAxisLabel} />
             <YAxis
               dataKey={config.dataKeys?.[0] || 'y'}
+              width={80}
               tickFormatter={axisTickFormatter}
             >
               {renderYAxisLabel(leftAxisLabelText, 'left')}
