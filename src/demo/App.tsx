@@ -6,6 +6,8 @@ import { SampleIntegration } from './SampleIntegration';
 import { DebugMath } from './DebugMath';
 import './App.css';
 
+type ThemeMode = 'system' | 'light' | 'dark';
+
 function App() {
   const [selectedTest, setSelectedTest] = useState(0);
   const [customContent, setCustomContent] = useState('');
@@ -19,6 +21,14 @@ function App() {
   const [streamingStage, setStreamingStage] = useState(0);
   const [isStreaming, setIsStreaming] = useState(false);
   const [showMultiChart, setShowMultiChart] = useState(false);
+  const [themeMode, setThemeMode] = useState<ThemeMode>('system');
+
+  // Determine the effective theme class for the markdown content
+  const getThemeClass = (): string => {
+    if (themeMode === 'light') return 'light';
+    if (themeMode === 'dark') return 'dark';
+    return ''; // system preference - no class, CSS handles it
+  };
 
   const currentContent = showStreamingTest
     ? streamingChartStages.stages[streamingStage]
@@ -187,6 +197,40 @@ function App() {
               />
               Show Raw Output
             </label>
+
+            <h3>Theme</h3>
+            <div className="theme-selector">
+              <label className="theme-option">
+                <input
+                  type="radio"
+                  name="theme"
+                  value="system"
+                  checked={themeMode === 'system'}
+                  onChange={() => setThemeMode('system')}
+                />
+                System
+              </label>
+              <label className="theme-option">
+                <input
+                  type="radio"
+                  name="theme"
+                  value="light"
+                  checked={themeMode === 'light'}
+                  onChange={() => setThemeMode('light')}
+                />
+                Light
+              </label>
+              <label className="theme-option">
+                <input
+                  type="radio"
+                  name="theme"
+                  value="dark"
+                  checked={themeMode === 'dark'}
+                  onChange={() => setThemeMode('dark')}
+                />
+                Dark
+              </label>
+            </div>
           </div>
         </aside>
 
@@ -303,10 +347,11 @@ Try:
                 )}
               </div>
               
-              <div className="rendered-output">
-                <MarkdownRenderer 
-                  content={currentContent} 
+              <div className={`rendered-output ${themeMode === 'dark' ? 'dark-mode' : themeMode === 'light' ? 'light-mode' : ''}`}>
+                <MarkdownRenderer
+                  content={currentContent}
                   disableMath={disableMath}
+                  className={getThemeClass()}
                 />
               </div>
 

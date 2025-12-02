@@ -445,7 +445,7 @@ const renderYAxisLabel = (value: string | undefined, orientation: 'left' | 'righ
       value={value}
       angle={orientation === 'right' ? 90 : -90}
       position={position}
-      style={{ textAnchor: 'middle', fill: '#374151', fontSize: 12, fontWeight: 500 }}
+      style={{ textAnchor: 'middle', fill: 'var(--md-chart-axis, #374151)', fontSize: 12, fontWeight: 500 }}
       offset={offset}
     />
   );
@@ -463,20 +463,32 @@ const isLikelyIncomplete = (code: string): boolean => {
     return true;
   }
 
-  // Check for incomplete table rows (line ends with | but has content before it suggesting more columns expected)
   const lines = code.split('\n');
   const tableLines = lines.filter(line => line.trim().includes('|'));
 
-  if (tableLines.length >= 2) {
-    // Get header column count
-    const headerLine = tableLines[0];
-    const headerCols = headerLine.split('|').filter(s => s.trim()).length;
+  if (tableLines.length > 0) {
+    // Check for table with header but no data rows yet
+    // A valid table needs: header row, separator row (---|---), and at least one data row
+    const separatorLines = tableLines.filter(line => line.match(/^\s*\|[-:\s|]+\|\s*$/));
+    const nonSeparatorLines = tableLines.filter(line => !line.match(/^\s*\|[-:\s|]+\|\s*$/));
 
-    // Check if last data row has fewer columns (excluding separator row)
-    const dataRows = tableLines.filter(line => !line.match(/^\s*\|[-:\s|]+\|\s*$/));
-    if (dataRows.length >= 2) {
-      const lastRow = dataRows[dataRows.length - 1];
+    // If we have table content but no separator row yet, it's incomplete
+    if (nonSeparatorLines.length > 0 && separatorLines.length === 0) {
+      return true;
+    }
+
+    // If we have header + separator but no data rows, it's incomplete
+    if (separatorLines.length > 0 && nonSeparatorLines.length <= 1) {
+      return true;
+    }
+
+    // Check if last data row has fewer columns than header (incomplete row)
+    if (nonSeparatorLines.length >= 2) {
+      const headerLine = nonSeparatorLines[0];
+      const headerCols = headerLine.split('|').filter(s => s.trim()).length;
+      const lastRow = nonSeparatorLines[nonSeparatorLines.length - 1];
       const lastRowCols = lastRow.split('|').filter(s => s.trim()).length;
+
       // Only flag as incomplete if clearly missing columns
       if (lastRowCols > 0 && lastRowCols < headerCols - 1) {
         return true;
@@ -497,9 +509,11 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
   const [error, setError] = useState<string | null>(null);
   const [config, setConfig] = useState<ChartConfig | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isWaitingForData, setIsWaitingForData] = useState(false);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastCodeRef = useRef<string>('');
   const lastUpdateTimeRef = useRef<number>(0);
+  const streamingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const now = Date.now();
@@ -510,38 +524,90 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
     lastCodeRef.current = code;
     lastUpdateTimeRef.current = now;
 
-    // Parse the current code
-    const parsed = parseChartConfig(code, language);
-
-    // Validation
-    if (!parsed) {
-      setConfig(null);
-      setError('Failed to parse chart configuration');
-      setIsStreaming(false);
-      return;
-    }
-
-    if (!Array.isArray(parsed.data) || parsed.data.length === 0) {
-      setConfig(null);
-      setError('Chart data is empty');
-      setIsStreaming(false);
-      return;
-    }
-
-    if (!parsed.type) {
-      setConfig(null);
-      setError('Chart type is required (bar, line, pie, area, scatter, composed)');
-      setIsStreaming(false);
-      return;
-    }
-
-    // Check if data appears incomplete
+    // Check if data appears incomplete (streaming in progress)
     const incomplete = isLikelyIncomplete(code);
 
     // Detect rapid updates (streaming) - updates faster than 100ms apart
     const rapidUpdate = codeChanged && timeSinceLastUpdate < 100 && timeSinceLastUpdate > 0;
+    const likelyStreaming = incomplete || rapidUpdate;
 
-    if (incomplete || rapidUpdate) {
+    // Parse the current code
+    const parsed = parseChartConfig(code, language);
+
+    // Validation - but handle differently if we're streaming
+    if (!parsed) {
+      if (likelyStreaming) {
+        // During streaming, show waiting state instead of error
+        setIsWaitingForData(true);
+        setIsStreaming(true);
+        setError(null);
+        setConfig(null);
+      } else {
+        setConfig(null);
+        setError('Failed to parse chart configuration');
+        setIsStreaming(false);
+        setIsWaitingForData(false);
+      }
+      return;
+    }
+
+    if (!Array.isArray(parsed.data) || parsed.data.length === 0) {
+      if (likelyStreaming) {
+        // During streaming with no data yet, show waiting state
+        setIsWaitingForData(true);
+        setIsStreaming(true);
+        setError(null);
+        setConfig(null);
+
+        // Clear any existing streaming timeout
+        if (streamingTimeoutRef.current) {
+          clearTimeout(streamingTimeoutRef.current);
+        }
+
+        // After 5 seconds of no valid data, show error (streaming likely failed)
+        streamingTimeoutRef.current = setTimeout(() => {
+          const currentParsed = parseChartConfig(lastCodeRef.current, language);
+          if (!currentParsed || !Array.isArray(currentParsed.data) || currentParsed.data.length === 0) {
+            setError('Chart data is empty');
+            setIsStreaming(false);
+            setIsWaitingForData(false);
+          }
+        }, 5000);
+      } else {
+        setConfig(null);
+        setError('Chart data is empty');
+        setIsStreaming(false);
+        setIsWaitingForData(false);
+      }
+      return;
+    }
+
+    if (!parsed.type) {
+      if (likelyStreaming) {
+        // Type not yet received during streaming
+        setIsWaitingForData(true);
+        setIsStreaming(true);
+        setError(null);
+        setConfig(null);
+      } else {
+        setConfig(null);
+        setError('Chart type is required (bar, line, pie, area, scatter, composed)');
+        setIsStreaming(false);
+        setIsWaitingForData(false);
+      }
+      return;
+    }
+
+    // Clear waiting state - we have valid data now
+    setIsWaitingForData(false);
+
+    // Clear streaming timeout if we got valid data
+    if (streamingTimeoutRef.current) {
+      clearTimeout(streamingTimeoutRef.current);
+      streamingTimeoutRef.current = null;
+    }
+
+    if (likelyStreaming) {
       setIsStreaming(true);
 
       // Clear any existing debounce timer
@@ -575,6 +641,9 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
+      if (streamingTimeoutRef.current) {
+        clearTimeout(streamingTimeoutRef.current);
+      }
     };
   }, [code, language]);
 
@@ -595,24 +664,34 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
       <div className="graph-container chart-container">
         <div style={{
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '20px',
-          color: '#6b7280'
+          padding: '40px 20px',
+          color: 'var(--md-text-secondary, #6b7280)',
+          minHeight: '200px',
         }}>
           <svg
             style={{
               animation: 'spin 1s linear infinite',
-              marginRight: '8px',
-              width: '20px',
-              height: '20px'
+              marginBottom: '12px',
+              width: '32px',
+              height: '32px',
+              color: isWaitingForData ? '#3b82f6' : 'currentColor',
             }}
             viewBox="0 0 24 24"
             fill="none"
           >
             <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeDasharray="32" strokeLinecap="round" />
           </svg>
-          Loading chart...
+          <span style={{ fontWeight: 500 }}>
+            {isWaitingForData ? 'Receiving chart data...' : 'Loading chart...'}
+          </span>
+          {isWaitingForData && (
+            <span style={{ fontSize: '0.85em', marginTop: '4px', opacity: 0.7 }}>
+              Waiting for complete data from stream
+            </span>
+          )}
         </div>
         <style>{`
           @keyframes spin {
@@ -639,22 +718,30 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
     ? config.yAxisRightLabel ?? inferredRightLabel ?? 'Value'
     : undefined;
 
+  // Use CSS custom properties for theme-aware styling
+  // These will be read from the computed styles of the container
   const tooltipStyle = {
-    backgroundColor: '#ffffff',
-    border: '1px solid #ccc',
+    backgroundColor: 'var(--md-chart-tooltip-bg, #ffffff)',
+    border: '1px solid var(--md-chart-tooltip-border, #ccc)',
     borderRadius: '4px',
     padding: '8px',
-    color: '#000000',
+    color: 'var(--md-chart-tooltip-text, #000000)',
   };
 
   const tooltipLabelStyle = {
-    color: '#000000',
+    color: 'var(--md-chart-tooltip-text, #000000)',
     fontWeight: 600,
     marginBottom: '4px',
   };
 
   const tooltipItemStyle = {
-    color: '#000000',
+    color: 'var(--md-chart-tooltip-text, #000000)',
+  };
+
+  // Cursor style for hover highlight - semi-transparent for better UX
+  const tooltipCursor = {
+    fill: 'var(--md-chart-grid, #e5e7eb)',
+    fillOpacity: 0.3,
   };
 
   const tooltipFormatter = (value: any, name: string) => {
@@ -733,7 +820,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
             textAlign: 'center',
             marginBottom: config.description ? '4px' : '12px',
             marginTop: 0,
-            color: '#000000',
+            color: 'var(--md-chart-text, #000000)',
             fontWeight: 600,
           }}
         >
@@ -746,7 +833,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
             textAlign: 'center',
             marginTop: 0,
             marginBottom: '12px',
-            color: '#4b5563',
+            color: 'var(--md-text-secondary, #4b5563)',
             fontSize: '0.9rem',
           }}
         >
@@ -776,6 +863,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               labelStyle={tooltipLabelStyle}
               itemStyle={tooltipItemStyle}
               formatter={tooltipFormatter}
+              cursor={tooltipCursor}
             />
             {showLegend && <Legend />}
             {referenceLineElements}
@@ -815,6 +903,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               labelStyle={tooltipLabelStyle}
               itemStyle={tooltipItemStyle}
               formatter={tooltipFormatter}
+              cursor={tooltipCursor}
             />
             {showLegend && <Legend />}
             {referenceLineElements}
@@ -855,6 +944,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               labelStyle={tooltipLabelStyle}
               itemStyle={tooltipItemStyle}
               formatter={tooltipFormatter}
+              cursor={tooltipCursor}
             />
             {showLegend && <Legend />}
             {referenceLineElements}
@@ -896,6 +986,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               labelStyle={tooltipLabelStyle}
               itemStyle={tooltipItemStyle}
               formatter={tooltipFormatter}
+              cursor={tooltipCursor}
             />
             {showLegend && <Legend />}
             {referenceLineElements}
@@ -995,6 +1086,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               labelStyle={tooltipLabelStyle}
               itemStyle={tooltipItemStyle}
               formatter={tooltipFormatter}
+              cursor={tooltipCursor}
             />
             {showLegend && <Legend />}
             {referenceLineElements}

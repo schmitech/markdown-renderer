@@ -8,14 +8,6 @@ export interface MermaidRendererProps {
 }
 
 /**
- * Props for PlantUML diagram renderer
- */
-export interface PlantUMLRendererProps {
-  code: string;
-  serverUrl?: string;
-}
-
-/**
  * Props for SVG renderer
  */
 export interface SVGRendererProps {
@@ -113,17 +105,9 @@ export interface MarkdownRendererProps {
    */
   enableMermaid?: boolean;
   /**
-   * Enable PlantUML diagram rendering (default: true)
-   */
-  enablePlantUML?: boolean;
-  /**
    * Enable SVG rendering (default: true)
    */
   enableSVG?: boolean;
-  /**
-   * Custom PlantUML server URL (optional)
-   */
-  plantUMLServerUrl?: string;
   /**
    * Enable syntax highlighting for code blocks (default: true)
    */
@@ -152,11 +136,9 @@ export interface CodeBlockProps {
   'data-block-code'?: string;
   enableGraphs?: boolean;
   enableMermaid?: boolean;
-  enablePlantUML?: boolean;
   enableSVG?: boolean;
   enableCharts?: boolean;
   enableMusic?: boolean;
-  plantUMLServerUrl?: string;
   enableSyntaxHighlighting?: boolean;
   syntaxTheme?: 'dark' | 'light';
 }

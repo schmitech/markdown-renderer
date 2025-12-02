@@ -1,8 +1,101 @@
 /* MarkdownStyles.css */
 
+/* CSS Custom Properties for theming */
+:root,
+.markdown-content {
+  /* Light mode colors (default) */
+  --md-bg-primary: #ffffff;
+  --md-bg-secondary: #f8f9fa;
+  --md-bg-tertiary: rgba(0, 0, 0, 0.06);
+  --md-text-primary: #1a1a1a;
+  --md-text-secondary: #4b5563;
+  --md-text-muted: #6b7280;
+  --md-border-color: rgba(0, 0, 0, 0.1);
+  --md-border-color-strong: rgba(0, 0, 0, 0.2);
+  --md-link-color: #2563eb;
+  --md-link-hover: #1d4ed8;
+  --md-code-bg: rgba(0, 0, 0, 0.06);
+  --md-code-border: rgba(0, 0, 0, 0.1);
+  --md-table-header-bg: rgba(0, 0, 0, 0.05);
+  --md-error-bg: rgba(255, 0, 0, 0.05);
+  --md-error-border: rgba(255, 0, 0, 0.2);
+  --md-error-text: #cc0000;
+
+  /* Chart-specific colors */
+  --md-chart-bg: #ffffff;
+  --md-chart-text: #1a1a1a;
+  --md-chart-grid: #e5e7eb;
+  --md-chart-axis: #374151;
+  --md-chart-tooltip-bg: #ffffff;
+  --md-chart-tooltip-border: #ccc;
+  --md-chart-tooltip-text: #000000;
+}
+
+/* Dark mode via class */
+.markdown-content.dark,
+.dark .markdown-content,
+[data-theme="dark"] .markdown-content {
+  --md-bg-primary: #1a1a2e;
+  --md-bg-secondary: #16213e;
+  --md-bg-tertiary: rgba(255, 255, 255, 0.1);
+  --md-text-primary: #e4e4e7;
+  --md-text-secondary: #a1a1aa;
+  --md-text-muted: #71717a;
+  --md-border-color: rgba(255, 255, 255, 0.1);
+  --md-border-color-strong: rgba(255, 255, 255, 0.2);
+  --md-link-color: #60a5fa;
+  --md-link-hover: #93c5fd;
+  --md-code-bg: rgba(255, 255, 255, 0.1);
+  --md-code-border: rgba(255, 255, 255, 0.15);
+  --md-table-header-bg: rgba(255, 255, 255, 0.08);
+  --md-error-bg: rgba(255, 100, 100, 0.1);
+  --md-error-border: rgba(255, 100, 100, 0.3);
+  --md-error-text: #ff6b6b;
+
+  /* Chart-specific colors for dark mode */
+  --md-chart-bg: #1e293b;
+  --md-chart-text: #e4e4e7;
+  --md-chart-grid: #374151;
+  --md-chart-axis: #9ca3af;
+  --md-chart-tooltip-bg: #1e293b;
+  --md-chart-tooltip-border: #475569;
+  --md-chart-tooltip-text: #e4e4e7;
+}
+
+/* System preference dark mode */
+@media (prefers-color-scheme: dark) {
+  .markdown-content:not(.light):not([data-theme="light"]) {
+    --md-bg-primary: #1a1a2e;
+    --md-bg-secondary: #16213e;
+    --md-bg-tertiary: rgba(255, 255, 255, 0.1);
+    --md-text-primary: #e4e4e7;
+    --md-text-secondary: #a1a1aa;
+    --md-text-muted: #71717a;
+    --md-border-color: rgba(255, 255, 255, 0.1);
+    --md-border-color-strong: rgba(255, 255, 255, 0.2);
+    --md-link-color: #60a5fa;
+    --md-link-hover: #93c5fd;
+    --md-code-bg: rgba(255, 255, 255, 0.1);
+    --md-code-border: rgba(255, 255, 255, 0.15);
+    --md-table-header-bg: rgba(255, 255, 255, 0.08);
+    --md-error-bg: rgba(255, 100, 100, 0.1);
+    --md-error-border: rgba(255, 100, 100, 0.3);
+    --md-error-text: #ff6b6b;
+
+    /* Chart-specific colors for dark mode */
+    --md-chart-bg: #1e293b;
+    --md-chart-text: #e4e4e7;
+    --md-chart-grid: #374151;
+    --md-chart-axis: #9ca3af;
+    --md-chart-tooltip-bg: #1e293b;
+    --md-chart-tooltip-border: #475569;
+    --md-chart-tooltip-text: #e4e4e7;
+  }
+}
+
 /* Use a parent class to scope all your markdown styles */
 .markdown-content {
-  color: inherit;
+  color: var(--md-text-primary);
   font-size: inherit;
   line-height: 1.6;
   word-break: break-word;
@@ -17,7 +110,7 @@
 .markdown-content h4,
 .markdown-content h5,
 .markdown-content h6 {
-  color: inherit;
+  color: var(--md-text-primary);
   font-weight: 600;
   line-height: 1.4;
   margin-block-start: 1.5em; /* Use logical properties */
@@ -43,7 +136,7 @@
 
 /* Links */
 .markdown-content a {
-  color: #2563eb; /* text-blue-600 */
+  color: var(--md-link-color);
   text-decoration: underline;
   text-underline-offset: 2px;
   transition: color 0.2s;
@@ -51,7 +144,7 @@
   word-break: break-word;
 }
 .markdown-content a:hover {
-  color: #1d4ed8; /* hover:text-blue-800 */
+  color: var(--md-link-hover);
 }
 
 /* Lists */
@@ -71,8 +164,8 @@
   padding: 12px 16px;
   margin: 12px 0;
   border-radius: 6px;
-  background-color: rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: var(--md-code-bg);
+  border: 1px solid var(--md-code-border);
   font-size: 0.9em;
   font-family: Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   max-height: 500px; /* Set a reasonable max height with scrolling */
@@ -88,8 +181,8 @@
   padding: 12px 16px;
   margin: 12px 0;
   border-radius: 6px;
-  background-color: rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: var(--md-code-bg);
+  border: 1px solid var(--md-code-border);
   font-size: 0.9em;
   font-family: Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   white-space: pre-wrap;
@@ -193,8 +286,8 @@
 .markdown-content code {
   padding: 2px 6px;
   border-radius: 4px;
-  background-color: rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: var(--md-code-bg);
+  border: 1px solid var(--md-code-border);
   font-size: 0.9em;
   font-family: Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
@@ -217,8 +310,8 @@
 .markdown-content td > code {
   padding: 2px 6px;
   border-radius: 4px;
-  background-color: rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: var(--md-code-bg);
+  border: 1px solid var(--md-code-border);
   font-size: 0.9em;
   font-family: Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
@@ -227,9 +320,9 @@
 .markdown-content blockquote {
   margin: 12px 0;
   padding-left: 16px;
-  border-left: 4px solid rgba(0, 0, 0, 0.2);
+  border-left: 4px solid var(--md-border-color-strong);
   font-style: italic;
-  opacity: 0.8;
+  color: var(--md-text-secondary);
 }
 
 /* Table wrapper for horizontal scrolling */
@@ -257,23 +350,23 @@
   width: auto; /* Let it size based on content */
 }
 
-.markdown-content thead { 
-  background-color: rgba(0, 0, 0, 0.05); 
+.markdown-content thead {
+  background-color: var(--md-table-header-bg);
 }
 
-.markdown-content th, 
+.markdown-content th,
 .markdown-content td {
   padding: 6px 10px;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--md-border-color-strong);
   line-height: 1.4;
   vertical-align: top;
 }
 
 /* Header cells - allow expansion with constraints */
 .markdown-content th {
-  font-weight: 600; 
+  font-weight: 600;
   text-align: left;
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: var(--md-table-header-bg);
   white-space: normal; /* Allow wrapping for long header text */
   min-width: 120px; /* Minimum width for headers */
   max-width: 250px; /* Maximum width before wrapping */
@@ -313,8 +406,7 @@
 .markdown-content hr {
   margin: 20px 0;
   border: none;
-  border-top: 1px solid rgba(0, 0, 0, 0.2);
-  opacity: 0.5;
+  border-top: 1px solid var(--md-border-color-strong);
 }
 
 /* Ensure KaTeX styles are not overridden */
@@ -333,8 +425,8 @@
   margin: 16px 0;
   padding: 12px;
   border-radius: 6px;
-  background-color: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: var(--md-chart-bg);
+  border: 1px solid var(--md-border-color);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -343,10 +435,15 @@
   overflow-y: hidden;
 }
 
-/* Chart titles - ensure they are always black and readable */
+/* Chart titles - theme-aware */
 .markdown-content .chart-container h4 {
-  color: #000000 !important;
+  color: var(--md-chart-text) !important;
   font-weight: 600;
+}
+
+/* Chart description - theme-aware */
+.markdown-content .chart-container p {
+  color: var(--md-text-secondary) !important;
 }
 
 .markdown-content .graph-container svg {
@@ -364,9 +461,9 @@
   padding: 12px 16px;
   margin: 16px 0;
   border-radius: 6px;
-  background-color: rgba(255, 0, 0, 0.05);
-  border: 1px solid rgba(255, 0, 0, 0.2);
-  color: #cc0000;
+  background-color: var(--md-error-bg);
+  border: 1px solid var(--md-error-border);
+  color: var(--md-error-text);
   font-size: 0.9em;
   font-family: Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
@@ -400,8 +497,8 @@
 
 .markdown-content .graph-error-toggle {
   background: transparent;
-  border: 1px solid rgba(255, 0, 0, 0.3);
-  color: #cc0000;
+  border: 1px solid var(--md-error-border);
+  color: var(--md-error-text);
   padding: 6px 12px;
   border-radius: 4px;
   cursor: pointer;
@@ -412,14 +509,13 @@
 }
 
 .markdown-content .graph-error-toggle:hover {
-  background-color: rgba(255, 0, 0, 0.1);
-  border-color: rgba(255, 0, 0, 0.4);
+  background-color: var(--md-error-bg);
 }
 
 .markdown-content .graph-error-details {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid rgba(255, 0, 0, 0.2);
+  border-top: 1px solid var(--md-error-border);
 }
 
 .markdown-content .graph-error-details pre {
@@ -437,11 +533,14 @@
 /* Mermaid specific styles */
 .markdown-content .mermaid-container {
   text-align: center;
+  min-height: 150px;
 }
 
-/* PlantUML specific styles */
-.markdown-content .plantuml-container {
-  text-align: center;
+.markdown-content .mermaid-container svg {
+  min-width: 400px;
+  min-height: 150px;
+  width: 100%;
+  height: auto;
 }
 
 /* SVG specific styles */

@@ -1,12 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { MermaidRenderer } from './renderers/MermaidRenderer';
-import { PlantUMLRenderer } from './renderers/PlantUMLRenderer';
 import { SVGRenderer } from './renderers/SVGRenderer';
 import { ChartRenderer } from './renderers/ChartRenderer';
 import { MusicRenderer } from './renderers/MusicRenderer';
 import type { CodeBlockProps } from './types';
+
+type ThemeMode = 'light' | 'dark';
+
+// Detect theme from element context (parent classes, data attributes, or system preference)
+const detectTheme = (element: HTMLElement | null): ThemeMode => {
+  if (!element) {
+    // Fallback to system preference
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  }
+
+  // Check for explicit .light or .dark class on .markdown-content
+  const markdownContent = element.closest('.markdown-content');
+  if (markdownContent) {
+    if (markdownContent.classList.contains('dark')) return 'dark';
+    if (markdownContent.classList.contains('light')) return 'light';
+  }
+
+  // Check for .dark or .light class on any ancestor
+  if (element.closest('.dark')) return 'dark';
+  if (element.closest('.light')) return 'light';
+
+  // Check for data-theme attribute on any ancestor
+  const themedAncestor = element.closest('[data-theme]');
+  if (themedAncestor) {
+    const dataTheme = themedAncestor.getAttribute('data-theme');
+    if (dataTheme === 'dark') return 'dark';
+    if (dataTheme === 'light') return 'light';
+  }
+
+  // Fallback to system preference
+  if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
+
+  return 'light';
+};
 
 // Copy button component for code blocks
 const CopyButton: React.FC<{ code: string }> = ({ code }) => {
@@ -65,14 +103,71 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   children,
   enableGraphs = true,
   enableMermaid = true,
-  enablePlantUML = true,
   enableSVG = true,
   enableCharts = true,
   enableMusic = true,
-  plantUMLServerUrl,
   enableSyntaxHighlighting = true,
-  syntaxTheme = 'dark',
+  syntaxTheme,
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [detectedTheme, setDetectedTheme] = useState<ThemeMode | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  // Mark as mounted after first render
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Detect theme from context - runs after mount when ref is available
+  useEffect(() => {
+    if (!mounted) return;
+
+    const updateTheme = () => {
+      const theme = detectTheme(containerRef.current);
+      setDetectedTheme(theme);
+    };
+
+    // Initial detection (after mount, ref should be available)
+    updateTheme();
+
+    // Listen for system theme changes
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      const prefersDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+      const handleMediaChange = () => updateTheme();
+
+      if (prefersDarkQuery.addEventListener) {
+        prefersDarkQuery.addEventListener('change', handleMediaChange);
+      } else if (prefersDarkQuery.addListener) {
+        prefersDarkQuery.addListener(handleMediaChange);
+      }
+
+      // Also observe DOM for class changes on ancestors
+      const observer = new MutationObserver(() => updateTheme());
+      if (containerRef.current) {
+        // Observe the markdown-content ancestor if it exists
+        const markdownContent = containerRef.current.closest('.markdown-content');
+        if (markdownContent) {
+          observer.observe(markdownContent, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+        }
+        // Also observe document body for theme changes
+        observer.observe(document.body, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+      }
+
+      return () => {
+        if (prefersDarkQuery.removeEventListener) {
+          prefersDarkQuery.removeEventListener('change', handleMediaChange);
+        } else if (prefersDarkQuery.removeListener) {
+          prefersDarkQuery.removeListener(handleMediaChange);
+        }
+        observer.disconnect();
+      };
+    }
+  }, [mounted]);
+
+  // Use explicit prop if provided, otherwise use detected theme, fallback to light
+  const effectiveTheme = syntaxTheme ?? detectedTheme ?? 'light';
+
   // Handle inline code (always render as code)
   if (inline) {
     return <code className={className}>{children}</code>;
@@ -85,34 +180,46 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
 
   // Route to chart renderer (if enabled)
   if (enableCharts && (language === 'chart' || language === 'chart-json' || language === 'chart-table')) {
-    return <ChartRenderer code={code} language={language} />;
+    return (
+      <div ref={containerRef}>
+        <ChartRenderer code={code} language={language} />
+      </div>
+    );
   }
 
   // Route to music notation renderer (if enabled) - ABC notation only
   if (enableMusic && (language === 'abc' || language === 'music')) {
-    return <MusicRenderer code={code} />;
+    return (
+      <div ref={containerRef}>
+        <MusicRenderer code={code} />
+      </div>
+    );
   }
 
   // Route to graph renderers (if enabled)
   if (enableGraphs) {
     if (language === 'mermaid' && enableMermaid) {
-      return <MermaidRenderer code={code} />;
-    }
-
-    if ((language === 'plantuml' || language === 'puml') && enablePlantUML) {
-      return <PlantUMLRenderer code={code} serverUrl={plantUMLServerUrl} />;
+      return (
+        <div ref={containerRef}>
+          <MermaidRenderer code={code} />
+        </div>
+      );
     }
 
     if (language === 'svg' && enableSVG) {
-      return <SVGRenderer code={code} />;
+      return (
+        <div ref={containerRef}>
+          <SVGRenderer code={code} />
+        </div>
+      );
     }
   }
 
   // Use syntax highlighting for regular code blocks
   if (enableSyntaxHighlighting && language) {
-    const style = syntaxTheme === 'light' ? vs : vscDarkPlus;
+    const style = effectiveTheme === 'light' ? vs : vscDarkPlus;
     return (
-      <div className="syntax-highlighted-wrapper code-block-container">
+      <div ref={containerRef} className="syntax-highlighted-wrapper code-block-container">
         <CopyButton code={code} />
         <SyntaxHighlighter
           language={language}
@@ -133,7 +240,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   // Fallback: render as normal code block
   // Use div instead of pre to avoid nesting issues with ReactMarkdown paragraph wrapping
   return (
-    <div className={`markdown-code-block code-block-container ${className}`.trim()}>
+    <div ref={containerRef} className={`markdown-code-block code-block-container ${className}`.trim()}>
       <CopyButton code={code} />
       <pre style={{ margin: 0, padding: 0, background: 'transparent', border: 'none' }}>
         <code>{code}</code>

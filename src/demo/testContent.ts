@@ -367,33 +367,6 @@ sequenceDiagram
     App-->>User: Display results
 \`\`\`
 
-### PlantUML Sequence Diagram
-\`\`\`plantuml
-@startuml
-Alice -> Bob: Authentication Request
-Bob --> Alice: Authentication Response
-Alice -> Bob: Another authentication Request
-Alice <-- Bob: Another authentication Response
-@enduml
-\`\`\`
-
-### PlantUML Class Diagram
-\`\`\`puml
-@startuml
-class User {
-  +String name
-  +String email
-  +login()
-  +logout()
-}
-class Admin {
-  +String permissions
-  +deleteUser()
-}
-User <|-- Admin
-@enduml
-\`\`\`
-
 ### SVG Graphics - Analytics Dashboard Icon
 \`\`\`svg
 <svg width="240" height="180" xmlns="http://www.w3.org/2000/svg">

@@ -76,7 +76,7 @@ export const preprocessMarkdown = (content: string): string => {
     let processed = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     
     // 0) Mask code blocks/inline code and display math FIRST so we never touch them during preprocessing
-    //    This is critical for preserving $ symbols in Mermaid, PlantUML, and other code blocks
+    //    This is critical for preserving $ symbols in Mermaid and other code blocks
     const { masked, masks } = maskCodeSegments(processed);
     processed = masked;
     
