@@ -1068,6 +1068,209 @@ All charts above should:
 - ✅ Show tooltips on hover
 - ✅ Render smoothly without flickering
 - ✅ Handle window resize gracefully`
+  },
+  {
+    title: 'X-Axis Label Handling (Many Data Points)',
+    content: `## X-Axis Label Improvements Test
+
+This test case validates the automatic handling of x-axis labels when there are many data points. The chart renderer should automatically:
+- Rotate labels when there are more than 6 data points
+- Truncate long labels when there are more than 4 data points AND average label length > 15 characters
+- Show fewer labels (interval) when there are many data points
+- Adjust bottom margin to accommodate rotated labels
+- Show full original labels in tooltips even when axis labels are truncated
+- Truncate at word boundaries when possible for better readability
+
+### Bar Chart with Many Job Roles (15+ data points)
+
+This chart tests label rotation, truncation, and interval display with many long category names. **Hover over the bars to see full job role names in tooltips** even when axis labels are truncated:
+
+\`\`\`chart
+type: bar
+title: Average Salary by Job Role
+description: Testing x-axis label handling with many data points and long labels
+showLegend: true
+xAxisLabel: Job Role
+yAxisLabel: Avg Salary / Min Salary / Max Salary
+formatter: {"format":"currency","currency":"USD","minimumFractionDigits":0}
+| Job Role | Avg Salary | Min Salary | Max Salary |
+|----------|------------|------------|------------|
+| Sales Representative | 65000 | 45000 | 85000 |
+| Engineering Sales Manager | 125000 | 95000 | 155000 |
+| Operations Specialist | 72000 | 55000 | 90000 |
+| Financial Analyst | 68000 | 50000 | 86000 |
+| Marketing Manager | 95000 | 75000 | 115000 |
+| Software Engineer | 110000 | 85000 | 135000 |
+| Product Manager | 105000 | 80000 | 130000 |
+| Data Scientist | 115000 | 90000 | 140000 |
+| Business Development Representative | 58000 | 42000 | 74000 |
+| Customer Success Manager | 78000 | 60000 | 96000 |
+| Human Resources Coordinator | 55000 | 40000 | 70000 |
+| Operations Manager | 88000 | 68000 | 108000 |
+| Senior Software Engineer | 135000 | 110000 | 160000 |
+| Technical Program Manager | 120000 | 95000 | 145000 |
+| Director of Engineering | 165000 | 140000 | 190000 |
+| Senior Product Manager | 140000 | 115000 | 165000 |
+| Principal Software Engineer | 155000 | 130000 | 180000 |
+| VP of Sales | 180000 | 150000 | 210000 |
+\`\`\`
+
+### Line Chart with Many Months (12+ data points)
+
+This chart demonstrates label rotation and interval display:
+
+\`\`\`chart
+type: line
+title: Monthly Revenue by Department
+description: Testing x-axis labels with 12 months
+showLegend: true
+xAxisLabel: Month
+yAxisLabel: Revenue ($)
+formatter: {"format":"currency","currency":"USD","minimumFractionDigits":0}
+| Month | Sales Department | Marketing Department | Support Department |
+|-------|------------------|----------------------|---------------------|
+| January | 125000 | 95000 | 75000 |
+| February | 135000 | 102000 | 78000 |
+| March | 128000 | 98000 | 72000 |
+| April | 142000 | 110000 | 82000 |
+| May | 150000 | 118000 | 88000 |
+| June | 145000 | 112000 | 85000 |
+| July | 138000 | 105000 | 80000 |
+| August | 152000 | 120000 | 90000 |
+| September | 148000 | 115000 | 87000 |
+| October | 160000 | 125000 | 95000 |
+| November | 155000 | 122000 | 92000 |
+| December | 168000 | 132000 | 100000 |
+\`\`\`
+
+### Area Chart with Many Categories (20+ data points)
+
+This chart tests the maximum label handling with many data points:
+
+\`\`\`chart
+type: area
+title: Product Category Performance
+description: Testing with 20+ categories to test label interval and rotation
+showLegend: true
+stacked: true
+xAxisLabel: Product Category
+yAxisLabel: Sales Volume
+| Product Category | Online Sales | Retail Sales |
+|------------------|-------------|--------------|
+| Electronics and Computers | 125000 | 95000 |
+| Clothing and Apparel | 98000 | 120000 |
+| Home and Garden Supplies | 75000 | 85000 |
+| Sports and Outdoor Equipment | 65000 | 72000 |
+| Books and Media | 45000 | 55000 |
+| Health and Beauty Products | 82000 | 78000 |
+| Automotive Parts and Accessories | 68000 | 92000 |
+| Toys and Games | 55000 | 68000 |
+| Food and Beverages | 110000 | 135000 |
+| Pet Supplies and Accessories | 42000 | 48000 |
+| Office Supplies and Equipment | 58000 | 65000 |
+| Furniture and Home Decor | 72000 | 88000 |
+| Jewelry and Watches | 48000 | 62000 |
+| Musical Instruments | 35000 | 42000 |
+| Art and Craft Supplies | 28000 | 35000 |
+| Baby Products and Gear | 52000 | 68000 |
+| Tools and Hardware | 65000 | 78000 |
+| Travel and Luggage | 38000 | 45000 |
+| Fitness and Exercise Equipment | 72000 | 85000 |
+| Kitchen and Dining Products | 68000 | 82000 |
+| Outdoor and Camping Gear | 55000 | 65000 |
+| Industrial and Scientific Supplies | 42000 | 52000 |
+\`\`\`
+
+### Bar Chart with Few Data Points (No Rotation)
+
+This chart has fewer than 6 data points, so labels should remain horizontal:
+
+\`\`\`chart
+type: bar
+title: Q1-Q4 Revenue Comparison
+description: Few data points - labels should remain horizontal
+showLegend: false
+xAxisLabel: Quarter
+yAxisLabel: Revenue ($)
+formatter: {"format":"currency","currency":"USD","minimumFractionDigits":0}
+| Quarter | Revenue |
+|---------|---------|
+| Q1 2024 | 450000 |
+| Q2 2024 | 520000 |
+| Q3 2024 | 480000 |
+| Q4 2024 | 610000 |
+\`\`\`
+
+### Chart Testing Smart Truncation (Many Short Labels)
+
+This chart has many data points but short labels - should NOT truncate unnecessarily:
+
+\`\`\`chart
+type: bar
+title: Performance by Region Code
+description: Testing smart truncation - many points but short labels shouldn't truncate
+showLegend: false
+xAxisLabel: Region
+yAxisLabel: Score
+| Region | Score |
+|--------|-------|
+| US | 95 |
+| UK | 88 |
+| CA | 92 |
+| DE | 85 |
+| FR | 87 |
+| IT | 83 |
+| ES | 81 |
+| NL | 89 |
+| SE | 91 |
+| NO | 90 |
+| DK | 88 |
+| FI | 86 |
+| AU | 93 |
+| JP | 84 |
+| KR | 82 |
+\`\`\`
+
+### Chart Testing Word-Boundary Truncation
+
+This chart tests truncation at word boundaries for better readability. Notice that truncated labels break at word boundaries (e.g., "Human Resources..." instead of "Human Resourc..."). **Hover to see full department names in tooltips:**
+
+\`\`\`chart
+type: line
+title: Department Performance Metrics
+description: Testing word-boundary truncation with long multi-word labels
+showLegend: true
+height: 400
+xAxisLabel: Department
+yAxisLabel: Performance Score
+| Department | Q1 Score | Q2 Score |
+|------------|---------|----------|
+| Human Resources Management | 85 | 88 |
+| Information Technology Services | 92 | 94 |
+| Customer Success and Support | 78 | 82 |
+| Sales and Business Development | 90 | 93 |
+| Marketing and Communications | 87 | 89 |
+| Product Development and Engineering | 95 | 97 |
+| Operations and Logistics | 83 | 85 |
+| Finance and Accounting | 88 | 91 |
+| Legal and Compliance | 82 | 84 |
+| Research and Development | 91 | 93 |
+\`\`\`
+
+### Expected Behavior
+
+Charts with many data points should:
+- ✅ Rotate x-axis labels at -45° when there are more than 6 data points
+- ✅ Truncate long labels with "..." when there are more than 4 data points AND average label length > 15 chars
+- ✅ Truncate at word boundaries when possible for better readability
+- ✅ Show fewer labels (interval) when there are many data points (12+)
+- ✅ Increase bottom margin to accommodate rotated labels
+- ✅ Prevent overlap between rotated labels and x-axis title (extra margin when both present)
+- ✅ Prevent overlap between rotated labels and legend (extra margin when both present)
+- ✅ Keep labels horizontal when there are 6 or fewer data points
+- ✅ All labels should be readable without overlapping
+- ✅ Tooltips should show FULL original labels even when axis labels are truncated
+- ✅ Short labels should NOT be truncated unnecessarily (smart truncation)`
   }
 ];
 

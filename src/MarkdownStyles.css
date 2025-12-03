@@ -534,13 +534,20 @@
 .markdown-content .mermaid-container {
   text-align: center;
   min-height: 150px;
+  overflow: auto; /* Enable scrolling for all mermaid diagrams */
+  overflow-x: auto; /* Enable horizontal scrolling for wide diagrams */
+  overflow-y: auto; /* Enable vertical scrolling for tall diagrams */
+  max-height: 800px; /* Set a reasonable max height */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 .markdown-content .mermaid-container svg {
   min-width: 400px;
   min-height: 150px;
-  width: 100%;
+  width: auto; /* Let SVG size based on content, not constrained to 100% */
+  max-width: none; /* Remove max-width constraint to allow wider diagrams */
   height: auto;
+  display: block; /* Ensure proper rendering */
 }
 
 /* SVG specific styles */

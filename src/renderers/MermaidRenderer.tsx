@@ -244,20 +244,20 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ code }) => {
             curve: 'basis',
           },
           sequence: {
-            useMaxWidth: true,
+            useMaxWidth: false, // Allow diagrams to be wider
             diagramMarginX: 80,
             diagramMarginY: 30,
-            actorMargin: 120,
-            width: 220,
-            height: 65,
+            actorMargin: 150, // Increased from 120
+            width: 300, // Increased from 220
+            height: 80, // Increased from 65
             boxMargin: 15,
             boxTextMargin: 8,
             noteMargin: 20,
             messageMargin: 55,
             mirrorActors: true,
-            actorFontSize: 16,
-            messageFontSize: 14,
-            noteFontSize: 14,
+            actorFontSize: 18, // Increased from 16
+            messageFontSize: 16, // Increased from 14
+            noteFontSize: 16, // Increased from 14
           },
           gantt: {
             useMaxWidth: true,

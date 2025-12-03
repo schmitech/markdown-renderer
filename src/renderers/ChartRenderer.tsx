@@ -766,10 +766,6 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
   const tooltipBgColor = CHART_THEME_VARS.tooltipBg;
   const tooltipBorderColor = CHART_THEME_VARS.tooltipBorder;
   const secondaryTextColor = CHART_THEME_VARS.secondaryText;
-  const legendWrapperStyle = {
-    color: textColor,
-    paddingTop: '12px',
-  };
   const axisStylingProps = {
     tick: { fill: axisColor },
     axisLine: { stroke: axisColor },
@@ -779,12 +775,78 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
     config.xAxisType ??
     (config.type === 'scatter' ? 'number' : inferXAxisTypeFromData(config.data, config.xKey));
   const isCategoryXAxis = xAxisType === 'category';
+  
+  // Calculate data point count and determine label rotation/truncation needs
+  const dataPointCount = config.data?.length || 0;
+  
+  // Analyze actual label lengths for smarter truncation decisions
+  const analyzeLabelLengths = (): { maxLength: number; avgLength: number } => {
+    if (!isCategoryXAxis || !config.data || dataPointCount === 0) {
+      return { maxLength: 0, avgLength: 0 };
+    }
+    const xKey = config.xKey || 'name';
+    const lengths = config.data
+      .map((item: any) => {
+        const value = item && typeof item === 'object' ? item[xKey] : undefined;
+        return value ? String(value).length : 0;
+      })
+      .filter((len: number) => len > 0);
+    
+    if (lengths.length === 0) return { maxLength: 0, avgLength: 0 };
+    
+    const maxLength = Math.max(...lengths);
+    const avgLength = lengths.reduce((sum: number, len: number) => sum + len, 0) / lengths.length;
+    return { maxLength, avgLength };
+  };
+  
+  const labelAnalysis = analyzeLabelLengths();
+  const shouldRotateLabels = isCategoryXAxis && dataPointCount > 6;
+  // Only truncate if we have many data points AND labels are actually long
+  const shouldTruncateLabels = isCategoryXAxis && dataPointCount > 4 && labelAnalysis.avgLength > 15;
+  const maxLabelLength = shouldTruncateLabels ? (dataPointCount > 10 ? 12 : 20) : Infinity;
+  const labelLengthForSizing = shouldTruncateLabels
+    ? (dataPointCount > 10 ? 12 : 20)
+    : labelAnalysis.maxLength || 0;
+  
+  // Calculate interval to show fewer labels when there are many
+  // With rotated labels, we can show more labels before needing intervals
+  const calculateInterval = (count: number): number => {
+    if (count <= 12) return 0; // Show all labels (common case like 12 months)
+    if (count <= 16) return 1; // Show every other label
+    if (count <= 24) return Math.floor(count / 12); // Show ~12 labels
+    return Math.floor(count / 15); // Show ~15 labels max for very large datasets
+  };
+  
+  const labelInterval = isCategoryXAxis ? calculateInterval(dataPointCount) : 0;
+
+  const estimateTickLabelHeight = () => {
+    if (!isCategoryXAxis || dataPointCount === 0) return 24;
+    const baseHeight = 24;
+    if (!shouldRotateLabels) {
+      const longLabelBonus = Math.max(labelLengthForSizing - 12, 0) * 1.5;
+      return Math.min(baseHeight + longLabelBonus, 48);
+    }
+    const approxCharWidth = 6.5;
+    const rotationRadians = (45 * Math.PI) / 180;
+    const approxWidth = labelLengthForSizing * approxCharWidth;
+    const rotatedHeight = Math.sin(rotationRadians) * approxWidth;
+    return Math.min(Math.max(baseHeight, rotatedHeight + 12), 140);
+  };
+
+  const estimatedTickLabelHeight = estimateTickLabelHeight();
+  const xAxisHeight = shouldRotateLabels
+    ? Math.min(Math.max(estimatedTickLabelHeight + 16, 80), 160)
+    : Math.max(estimatedTickLabelHeight + 12, 36);
+
   const categoricalXAxisProps = {
     type: 'category' as const,
     scale: 'band' as const,
-    interval: 0 as const,
+    interval: labelInterval as number,
     allowDuplicatedCategory: false,
     padding: { left: 16, right: 16 },
+    angle: shouldRotateLabels ? -45 : 0,
+    textAnchor: shouldRotateLabels ? 'end' as const : 'middle' as const,
+    height: xAxisHeight,
   };
   const numericXAxisProps = {
     type: 'number' as const,
@@ -838,23 +900,108 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
     return value;
   };
 
-  const xAxisTickFormatter = (value: any) =>
-    isCategoryXAxis ? formatCategoryLabel(value) : axisTickFormatter(value);
+  const truncateLabel = (label: string, maxLength: number): string => {
+    if (!label || typeof label !== 'string') return String(label ?? '');
+    if (label.length <= maxLength) return label;
+    // Truncate at word boundary when possible for better readability
+    const truncated = label.substring(0, maxLength - 3);
+    const lastSpace = truncated.lastIndexOf(' ');
+    if (lastSpace > maxLength * 0.6) {
+      // If we can truncate at a word boundary without losing too much, do it
+      return truncated.substring(0, lastSpace) + '...';
+    }
+    return truncated + '...';
+  };
+
+  const xAxisTickFormatter = (value: any) => {
+    if (!isCategoryXAxis) return axisTickFormatter(value);
+    const formatted = formatCategoryLabel(value);
+    return shouldTruncateLabels ? truncateLabel(formatted, maxLabelLength) : formatted;
+  };
+
+  // Tooltip label formatter: always show full original label, even if axis label is truncated
+  const tooltipLabelFormatter = (label: any) => {
+    if (!isCategoryXAxis) return String(label ?? '');
+    // Return the original formatted label (before truncation) for tooltip
+    return formatCategoryLabel(label);
+  };
 
   const xAxisHasLabel = Boolean(config.xAxisLabel);
-  const xAxisLabel = xAxisHasLabel
-    ? {
-        value: config.xAxisLabel,
-        position: 'insideBottom' as const,
-        offset: -5,
-      }
-    : undefined;
+  const baseBottomMargin = 18;
+  const extraMarginForManyLabels = dataPointCount > 10 ? 16 : 0;
+  const estimatedAxisLabelHeight = xAxisHasLabel ? 20 : 0;
+  const estimatedLegendHeight = showLegend ? 24 : 0;
+  // Tighter gap when legend is present to keep label/legend close
+  const axisLabelGap = xAxisHasLabel
+    ? showLegend
+      ? shouldRotateLabels
+        ? 10
+        : 5
+      : shouldRotateLabels
+        ? 14
+        : 8
+    : 0;
+  // Keep legend just a hair below the axis label
+  const legendGap = showLegend
+    ? xAxisHasLabel
+      ? shouldRotateLabels
+        ? 1
+        : 0
+      : shouldRotateLabels
+        ? 8
+        : 5
+    : 0;
+  const spacingBuffer =
+    xAxisHasLabel && showLegend ? (shouldRotateLabels ? 1 : 0) : shouldRotateLabels ? 6 : 4;
+  // More aggressive optimization when both are present - they should be close together
+  const optimizedSpacing = xAxisHasLabel && showLegend ? 10 : 0;
+  const bottomMargin =
+    baseBottomMargin +
+    estimatedTickLabelHeight +
+    axisLabelGap +
+    estimatedAxisLabelHeight +
+    legendGap +
+    estimatedLegendHeight +
+    extraMarginForManyLabels +
+    spacingBuffer -
+    optimizedSpacing; // Reduce total margin when both are present
 
   const chartMargin = {
     left: leftAxisLabelText ? 80 : 10,
     right: rightAxisLabelText ? 80 : 10,
     top: 10,
-    bottom: 30 + (xAxisHasLabel ? 12 : 0) + (showLegend ? 12 : 0),
+    bottom: bottomMargin,
+  };
+
+  const availableSpaceForLabel = Math.max(
+    bottomMargin - (estimatedLegendHeight + legendGap) - 8,
+    10
+  );
+  const desiredLabelOffset = Math.min(Math.max(Math.round(estimatedTickLabelHeight * 0.3), 8), 24);
+  const xAxisLabelOffset = Math.min(desiredLabelOffset + axisLabelGap * 0.75, availableSpaceForLabel);
+  const xAxisLabel = xAxisHasLabel
+    ? {
+        value: config.xAxisLabel,
+        position: 'bottom' as const,
+        offset: xAxisLabelOffset,
+      }
+    : undefined;
+
+  // When x-axis label exists, position legend directly below it with adequate spacing
+  // The x-axis label is positioned at offset from the bottom, so we need to account for that
+  // Calculate the space needed to position legend below the x-axis label with safe clearance
+  const xAxisLabelBottomSpace = xAxisHasLabel 
+    ? (estimatedAxisLabelHeight + (shouldRotateLabels ? 18 : 16))  // Space for label + generous gap for clear separation
+    : 0;
+  const legendWrapperStyle = {
+    color: textColor,
+    // Add padding to position legend below the x-axis label with safe clearance
+    // When x-axis label exists, we need padding to push legend below it
+    paddingTop: xAxisHasLabel 
+      ? xAxisLabelBottomSpace  // Position below x-axis label with safe spacing
+      : (legendGap || 6),
+    // Only use bottom offset when there's no x-axis label to anchor to
+    ...(xAxisHasLabel ? {} : { bottom: showLegend ? Math.max(6, spacingBuffer + 4) : undefined }),
   };
 
   return (
@@ -960,6 +1107,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               labelStyle={tooltipLabelStyle}
               itemStyle={tooltipItemStyle}
               formatter={tooltipFormatter}
+              labelFormatter={tooltipLabelFormatter}
               cursor={tooltipCursor}
             />
             {showLegend && <Legend wrapperStyle={legendWrapperStyle} />}
@@ -1012,6 +1160,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               labelStyle={tooltipLabelStyle}
               itemStyle={tooltipItemStyle}
               formatter={tooltipFormatter}
+              labelFormatter={tooltipLabelFormatter}
               cursor={tooltipCursor}
             />
             {showLegend && <Legend wrapperStyle={legendWrapperStyle} />}
@@ -1065,6 +1214,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               labelStyle={tooltipLabelStyle}
               itemStyle={tooltipItemStyle}
               formatter={tooltipFormatter}
+              labelFormatter={tooltipLabelFormatter}
               cursor={tooltipCursor}
             />
             {showLegend && <Legend wrapperStyle={legendWrapperStyle} />}
@@ -1119,6 +1269,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               labelStyle={tooltipLabelStyle}
               itemStyle={tooltipItemStyle}
               formatter={tooltipFormatter}
+              labelFormatter={tooltipLabelFormatter}
               cursor={tooltipCursor}
             />
             {showLegend && <Legend wrapperStyle={legendWrapperStyle} />}
@@ -1226,6 +1377,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               labelStyle={tooltipLabelStyle}
               itemStyle={tooltipItemStyle}
               formatter={tooltipFormatter}
+              labelFormatter={tooltipLabelFormatter}
               cursor={tooltipCursor}
             />
             {showLegend && <Legend wrapperStyle={legendWrapperStyle} />}
