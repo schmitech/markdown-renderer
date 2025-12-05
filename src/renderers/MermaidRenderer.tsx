@@ -237,54 +237,96 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ code }) => {
           theme: theme === 'dark' ? 'dark' : 'default',
           securityLevel: 'loose',
           themeVariables,
-          // Diagram-specific sizing for better visibility
+          // Optimized diagram settings for readability and compact display
           flowchart: {
             useMaxWidth: true,
             htmlLabels: true,
             curve: 'basis',
+            padding: 15,
+            nodeSpacing: 50,
+            rankSpacing: 50,
           },
           sequence: {
-            useMaxWidth: false, // Allow diagrams to be wider
-            diagramMarginX: 80,
-            diagramMarginY: 30,
-            actorMargin: 150, // Increased from 120
-            width: 300, // Increased from 220
-            height: 80, // Increased from 65
-            boxMargin: 15,
-            boxTextMargin: 8,
-            noteMargin: 20,
-            messageMargin: 55,
+            useMaxWidth: true,
+            diagramMarginX: 30,
+            diagramMarginY: 15,
+            actorMargin: 50,
+            width: 120,
+            height: 40,
+            boxMargin: 8,
+            boxTextMargin: 4,
+            noteMargin: 10,
+            messageMargin: 35,
             mirrorActors: true,
-            actorFontSize: 18, // Increased from 16
-            messageFontSize: 16, // Increased from 14
-            noteFontSize: 16, // Increased from 14
+            actorFontSize: 13,
+            messageFontSize: 12,
+            noteFontSize: 12,
+            wrap: true,
+            wrapPadding: 10,
           },
           gantt: {
             useMaxWidth: true,
-            barHeight: 30,
-            barGap: 6,
-            topPadding: 50,
-            leftPadding: 100,
-            gridLineStartPadding: 50,
-            fontSize: 14,
+            barHeight: 24,
+            barGap: 4,
+            topPadding: 40,
+            leftPadding: 80,
+            gridLineStartPadding: 40,
+            fontSize: 12,
+            sectionFontSize: 13,
+            numberSectionStyles: 4,
           },
           er: {
             useMaxWidth: true,
-            fontSize: 14,
+            fontSize: 12,
+            entityPadding: 15,
           },
           pie: {
             useMaxWidth: true,
+            textPosition: 0.75,
           },
           journey: {
             useMaxWidth: true,
+            diagramMarginX: 30,
+            diagramMarginY: 20,
+            leftMargin: 100,
+            width: 120,
+            height: 50,
+            boxMargin: 8,
+            boxTextMargin: 4,
+            noteMargin: 10,
+            messageMargin: 30,
           },
           gitGraph: {
             useMaxWidth: true,
+            diagramPadding: 8,
+            nodeLabel: {
+              width: 75,
+              height: 100,
+              x: -25,
+              y: 0,
+            },
           },
           class: {
             useMaxWidth: true,
+            padding: 10,
           },
           state: {
+            useMaxWidth: true,
+            padding: 8,
+            dividerMargin: 10,
+          },
+          mindmap: {
+            useMaxWidth: true,
+            padding: 10,
+          },
+          timeline: {
+            useMaxWidth: true,
+            padding: 10,
+          },
+          quadrantChart: {
+            useMaxWidth: true,
+          },
+          sankey: {
             useMaxWidth: true,
           },
         });
@@ -373,19 +415,66 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ code }) => {
     }
 
     if (!svg) {
-      return <div>Loading Mermaid diagram...</div>;
+      return (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '30px 20px',
+          color: 'var(--md-text-secondary, #6b7280)',
+          minHeight: '120px',
+        }}>
+          <svg
+            style={{
+              animation: 'spin 1s linear infinite',
+              marginBottom: '10px',
+              width: '28px',
+              height: '28px',
+            }}
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeDasharray="32" strokeLinecap="round" />
+          </svg>
+          <span style={{ fontWeight: 500, fontSize: '14px' }}>
+            Rendering diagram...
+          </span>
+          <style>{`
+            @keyframes spin {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      );
     }
 
     return (
       <div
         ref={containerRef}
+        className="mermaid-svg-container"
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          width: '100%',
+          overflow: 'auto',
+        }}
         dangerouslySetInnerHTML={{ __html: svg }}
       />
     );
   };
 
   return (
-    <div className="graph-container mermaid-container" ref={hostRef}>
+    <div
+      className="graph-container mermaid-container"
+      ref={hostRef}
+      style={{
+        padding: '16px',
+        minHeight: '100px',
+      }}
+    >
       {renderContent()}
     </div>
   );

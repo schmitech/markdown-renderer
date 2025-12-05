@@ -404,41 +404,6 @@ sequenceDiagram
     App-->>User: Display results
 \`\`\`
 
-### SVG Graphics - Analytics Dashboard Icon
-\`\`\`svg
-<svg width="240" height="180" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background -->
-  <rect width="240" height="180" fill="#f8fafc" rx="8"/>
-
-  <!-- Bar Chart -->
-  <rect x="30" y="120" width="30" height="40" fill="#3b82f6" rx="4"/>
-  <rect x="70" y="90" width="30" height="70" fill="#8b5cf6" rx="4"/>
-  <rect x="110" y="70" width="30" height="90" fill="#ec4899" rx="4"/>
-  <rect x="150" y="100" width="30" height="60" fill="#f59e0b" rx="4"/>
-  <rect x="190" y="110" width="30" height="50" fill="#10b981" rx="4"/>
-
-  <!-- Trend Line -->
-  <polyline points="45,130 85,105 125,85 165,115 205,120"
-            fill="none" stroke="#ef4444" stroke-width="3"
-            stroke-linecap="round" stroke-linejoin="round"/>
-
-  <!-- Data Points -->
-  <circle cx="45" cy="130" r="5" fill="#ef4444" stroke="#fff" stroke-width="2"/>
-  <circle cx="85" cy="105" r="5" fill="#ef4444" stroke="#fff" stroke-width="2"/>
-  <circle cx="125" cy="85" r="5" fill="#ef4444" stroke="#fff" stroke-width="2"/>
-  <circle cx="165" cy="115" r="5" fill="#ef4444" stroke="#fff" stroke-width="2"/>
-  <circle cx="205" cy="120" r="5" fill="#ef4444" stroke="#fff" stroke-width="2"/>
-
-  <!-- Title -->
-  <text x="120" y="25" text-anchor="middle" font-family="Arial, sans-serif"
-        font-size="16" font-weight="bold" fill="#1e293b">Revenue Growth</text>
-
-  <!-- Legend -->
-  <circle cx="30" cy="45" r="4" fill="#ef4444"/>
-  <text x="40" y="49" font-family="Arial, sans-serif" font-size="12" fill="#64748b">Trend</text>
-</svg>
-\`\`\`
-
 ### Mixed Content: Graphs with Math and Currency
 The algorithm costs $500 to run and has complexity $O(n \\log n)$:
 
@@ -504,6 +469,247 @@ T:Test Tune
 M:4/4
 K:C
 C D E F G A B c |
+\`\`\`
+`,
+  },
+  {
+    title: 'SVG Graphics',
+    content: `## SVG Graphics Examples
+
+SVG (Scalable Vector Graphics) allows for crisp, resolution-independent graphics. These examples demonstrate various SVG features including gradients, filters, patterns, clipping, animations, and more.
+
+### Analytics Dashboard Icon
+\`\`\`svg
+<svg width="240" height="180" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="240" height="180" fill="#f8fafc" rx="8"/>
+  <!-- Bar Chart -->
+  <rect x="30" y="120" width="30" height="40" fill="#3b82f6" rx="4"/>
+  <rect x="70" y="90" width="30" height="70" fill="#8b5cf6" rx="4"/>
+  <rect x="110" y="70" width="30" height="90" fill="#ec4899" rx="4"/>
+  <rect x="150" y="100" width="30" height="60" fill="#f59e0b" rx="4"/>
+  <rect x="190" y="110" width="30" height="50" fill="#10b981" rx="4"/>
+  <!-- Trend Line -->
+  <polyline points="45,130 85,105 125,85 165,115 205,120"
+            fill="none" stroke="#ef4444" stroke-width="3"
+            stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Data Points -->
+  <circle cx="45" cy="130" r="5" fill="#ef4444" stroke="#fff" stroke-width="2"/>
+  <circle cx="85" cy="105" r="5" fill="#ef4444" stroke="#fff" stroke-width="2"/>
+  <circle cx="125" cy="85" r="5" fill="#ef4444" stroke="#fff" stroke-width="2"/>
+  <circle cx="165" cy="115" r="5" fill="#ef4444" stroke="#fff" stroke-width="2"/>
+  <circle cx="205" cy="120" r="5" fill="#ef4444" stroke="#fff" stroke-width="2"/>
+  <!-- Title -->
+  <text x="120" y="25" text-anchor="middle" font-family="Arial, sans-serif"
+        font-size="16" font-weight="bold" fill="#1e293b">Revenue Growth</text>
+  <!-- Legend -->
+  <circle cx="30" cy="45" r="4" fill="#ef4444"/>
+  <text x="40" y="49" font-family="Arial, sans-serif" font-size="12" fill="#64748b">Trend</text>
+</svg>
+\`\`\`
+
+### Progress Ring with Gradient
+\`\`\`svg
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="50%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="80" fill="none" stroke="#e5e7eb" stroke-width="12"/>
+  <circle cx="100" cy="100" r="80" fill="none" stroke="url(#progressGradient)"
+          stroke-width="12" stroke-linecap="round"
+          stroke-dasharray="377" stroke-dashoffset="94"
+          transform="rotate(-90 100 100)"/>
+  <text x="100" y="95" text-anchor="middle" font-family="Arial, sans-serif"
+        font-size="32" font-weight="bold" fill="#1f2937">75%</text>
+  <text x="100" y="120" text-anchor="middle" font-family="Arial, sans-serif"
+        font-size="14" fill="#6b7280">Complete</text>
+</svg>
+\`\`\`
+
+### Glowing Button with Filter
+\`\`\`svg
+<svg width="200" height="80" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <linearGradient id="buttonGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <rect x="20" y="15" width="160" height="50" rx="25"
+        fill="url(#buttonGradient)" filter="url(#glow)"/>
+  <text x="100" y="47" text-anchor="middle" font-family="Arial, sans-serif"
+        font-size="16" font-weight="bold" fill="white">Get Started</text>
+</svg>
+\`\`\`
+
+### Decorative Pattern Background
+\`\`\`svg
+<svg width="240" height="120" viewBox="0 0 240 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="dots" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="10" cy="10" r="2" fill="#cbd5e1"/>
+    </pattern>
+    <pattern id="grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e2e8f0" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="240" height="120" fill="url(#grid)"/>
+  <rect width="240" height="120" fill="url(#dots)" opacity="0.5"/>
+  <rect x="40" y="30" width="160" height="60" rx="8" fill="#fff" stroke="#e2e8f0" stroke-width="2"/>
+  <text x="120" y="68" text-anchor="middle" font-family="Arial, sans-serif"
+        font-size="18" font-weight="600" fill="#1e293b">Pattern Demo</text>
+</svg>
+\`\`\`
+
+### Profile Avatar with Clip Path
+\`\`\`svg
+<svg width="150" height="150" viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="avatarClip">
+      <circle cx="75" cy="75" r="65"/>
+    </clipPath>
+    <linearGradient id="avatarBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ddd6fe"/>
+      <stop offset="100%" stop-color="#c4b5fd"/>
+    </linearGradient>
+  </defs>
+  <circle cx="75" cy="75" r="72" fill="none" stroke="#8b5cf6" stroke-width="4"/>
+  <circle cx="75" cy="75" r="65" fill="url(#avatarBg)"/>
+  <g clip-path="url(#avatarClip)">
+    <circle cx="75" cy="55" r="25" fill="#7c3aed"/>
+    <ellipse cx="75" cy="130" rx="45" ry="40" fill="#7c3aed"/>
+  </g>
+  <circle cx="115" cy="115" r="15" fill="#fff"/>
+  <circle cx="115" cy="115" r="12" fill="#22c55e"/>
+</svg>
+\`\`\`
+
+### Animated Spinner
+\`\`\`svg
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="spinnerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="40" fill="none" stroke="#e5e7eb" stroke-width="8"/>
+  <circle cx="50" cy="50" r="40" fill="none" stroke="url(#spinnerGradient)"
+          stroke-width="8" stroke-linecap="round"
+          stroke-dasharray="200" stroke-dashoffset="150"
+          transform="rotate(0 50 50)">
+    <animateTransform attributeName="transform" type="rotate"
+                      from="0 50 50" to="360 50 50" dur="1s" repeatCount="indefinite"/>
+  </circle>
+</svg>
+\`\`\`
+
+### Arrow Diagram with Markers
+\`\`\`svg
+<svg width="300" height="150" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6366f1"/>
+    </marker>
+  </defs>
+  <rect x="20" y="50" width="70" height="40" rx="6" fill="#eef2ff" stroke="#6366f1" stroke-width="2"/>
+  <text x="55" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#4338ca">Input</text>
+  <rect x="120" y="50" width="70" height="40" rx="6" fill="#eef2ff" stroke="#6366f1" stroke-width="2"/>
+  <text x="155" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#4338ca">Process</text>
+  <rect x="220" y="50" width="70" height="40" rx="6" fill="#eef2ff" stroke="#6366f1" stroke-width="2"/>
+  <text x="255" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#4338ca">Output</text>
+  <line x1="90" y1="70" x2="118" y2="70" stroke="#6366f1" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="190" y1="70" x2="218" y2="70" stroke="#6366f1" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="150" y="25" text-anchor="middle" font-family="Arial, sans-serif"
+        font-size="14" font-weight="bold" fill="#1e293b">Data Flow</text>
+</svg>
+\`\`\`
+
+### Network Topology with Shadows
+\`\`\`svg
+<svg width="320" height="240" viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="serverGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="clientGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <text x="160" y="25" text-anchor="middle" font-family="Arial, sans-serif"
+        font-size="16" font-weight="bold" fill="#1e293b">Network Architecture</text>
+  <line x1="160" y1="75" x2="70" y2="150" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5,3"/>
+  <line x1="160" y1="75" x2="160" y2="150" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5,3"/>
+  <line x1="160" y1="75" x2="250" y2="150" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5,3"/>
+  <g filter="url(#shadow)">
+    <rect x="130" y="45" width="60" height="45" rx="6" fill="url(#serverGrad)"/>
+    <rect x="140" y="55" width="40" height="4" rx="2" fill="#fff" opacity="0.6"/>
+    <rect x="140" y="63" width="40" height="4" rx="2" fill="#fff" opacity="0.6"/>
+    <rect x="140" y="71" width="40" height="4" rx="2" fill="#fff" opacity="0.6"/>
+    <circle cx="175" cy="80" r="3" fill="#22c55e"/>
+  </g>
+  <text x="160" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#475569">Server</text>
+  <g filter="url(#shadow)">
+    <rect x="40" y="140" width="60" height="45" rx="6" fill="url(#clientGrad)"/>
+    <rect x="50" y="148" width="40" height="25" rx="2" fill="#fff" opacity="0.3"/>
+    <rect x="60" y="178" width="20" height="3" rx="1" fill="#fff" opacity="0.5"/>
+  </g>
+  <text x="70" y="200" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#475569">Client A</text>
+  <g filter="url(#shadow)">
+    <rect x="130" y="140" width="60" height="45" rx="6" fill="url(#clientGrad)"/>
+    <rect x="140" y="148" width="40" height="25" rx="2" fill="#fff" opacity="0.3"/>
+    <rect x="150" y="178" width="20" height="3" rx="1" fill="#fff" opacity="0.5"/>
+  </g>
+  <text x="160" y="200" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#475569">Client B</text>
+  <g filter="url(#shadow)">
+    <rect x="220" y="140" width="60" height="45" rx="6" fill="url(#clientGrad)"/>
+    <rect x="230" y="148" width="40" height="25" rx="2" fill="#fff" opacity="0.3"/>
+    <rect x="240" y="178" width="20" height="3" rx="1" fill="#fff" opacity="0.5"/>
+  </g>
+  <text x="250" y="200" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#475569">Client C</text>
+  <rect x="20" y="215" width="12" height="12" rx="2" fill="url(#serverGrad)"/>
+  <text x="37" y="225" font-family="Arial, sans-serif" font-size="10" fill="#64748b">Server</text>
+  <rect x="90" y="215" width="12" height="12" rx="2" fill="url(#clientGrad)"/>
+  <text x="107" y="225" font-family="Arial, sans-serif" font-size="10" fill="#64748b">Client</text>
+</svg>
+\`\`\`
+
+### Curved Text Path
+\`\`\`svg
+<svg width="280" height="140" viewBox="0 0 280 140" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <path id="textCurve" d="M 20 100 Q 140 20 260 100" fill="none"/>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f472b6"/>
+      <stop offset="50%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#60a5fa"/>
+    </linearGradient>
+  </defs>
+  <path d="M 20 100 Q 140 20 260 100" fill="none" stroke="#e2e8f0" stroke-width="2" stroke-dasharray="4,4"/>
+  <text font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="url(#textGrad)">
+    <textPath href="#textCurve" startOffset="50%" text-anchor="middle">
+      Follow the Curve
+    </textPath>
+  </text>
+  <circle cx="20" cy="100" r="6" fill="#f472b6"/>
+  <circle cx="260" cy="100" r="6" fill="#60a5fa"/>
+</svg>
 \`\`\`
 `,
   },

@@ -267,31 +267,64 @@ export const parseChartConfig = (code: string, language: string): ChartConfig | 
 
     if (hasTable) {
       const tableLines = lines.filter((line) => line.includes('|'));
-      const headers = tableLines[0]
-        .split('|')
-        .map((h) => h.trim())
-        .filter(Boolean);
-      const dataRows = tableLines.slice(2); // Skip header and separator
 
-      config.data = dataRows
-        .map((row) => {
-          const values = row
+      // More robust separator detection
+      const isSeparatorLine = (line: string) => {
+        const trimmed = line.trim();
+        if (!trimmed.includes('|')) return false;
+        const withoutPipesAndSpaces = trimmed.replace(/[\|\s]/g, '');
+        const dashCount = (withoutPipesAndSpaces.match(/-/g) || []).length;
+        return dashCount > 0 && dashCount >= withoutPipesAndSpaces.length * 0.5;
+      };
+
+      // Find separator index to properly split header from data
+      const separatorIndex = tableLines.findIndex(isSeparatorLine);
+
+      // If no separator found yet, we're still streaming - return partial config
+      if (separatorIndex === -1) {
+        // Still set headers if we have them
+        if (tableLines.length > 0) {
+          const headers = tableLines[0]
             .split('|')
-            .map((v) => v.trim())
+            .map((h) => h.trim())
             .filter(Boolean);
-          if (!values.length) return null;
-          const obj: Record<string, any> = {};
-          headers.forEach((header, idx) => {
-            const value = values[idx];
-            if (typeof value === 'undefined') return;
-            obj[header] = value !== '' && !Number.isNaN(Number(value)) ? Number(value) : value;
-          });
-          return obj;
-        })
-        .filter(Boolean) as any[];
+          if (headers.length > 0) {
+            config.xKey = headers[0];
+            config.dataKeys = headers.slice(1);
+          }
+        }
+        config.data = [];
+      } else {
+        const headers = tableLines[0]
+          .split('|')
+          .map((h) => h.trim())
+          .filter(Boolean);
+        const dataRows = tableLines.slice(separatorIndex + 1); // Skip everything up to and including separator
 
-      config.xKey = headers[0];
-      config.dataKeys = headers.slice(1);
+        config.data = dataRows
+          .map((row) => {
+            // Skip separator-like rows that might appear in data
+            if (isSeparatorLine(row)) return null;
+
+            const values = row
+              .split('|')
+              .map((v) => v.trim())
+              .filter(Boolean);
+            if (!values.length) return null;
+
+            const obj: Record<string, any> = {};
+            headers.forEach((header, idx) => {
+              const value = values[idx];
+              if (typeof value === 'undefined') return;
+              obj[header] = value !== '' && !Number.isNaN(Number(value)) ? Number(value) : value;
+            });
+            return obj;
+          })
+          .filter(Boolean) as any[];
+
+        config.xKey = headers[0];
+        config.dataKeys = headers.slice(1);
+      }
 
       for (const line of lines) {
         if (line.includes('|')) break;
@@ -508,8 +541,19 @@ const isLikelyIncomplete = (code: string): boolean => {
   if (tableLines.length > 0) {
     // Check for table with header but no data rows yet
     // A valid table needs: header row, separator row (---|---), and at least one data row
-    const separatorLines = tableLines.filter(line => line.match(/^\s*\|[-:\s|]+\|\s*$/));
-    const nonSeparatorLines = tableLines.filter(line => !line.match(/^\s*\|[-:\s|]+\|\s*$/));
+    // More lenient separator detection - any line with mostly dashes and pipes
+    const isSeparatorLine = (line: string) => {
+      const trimmed = line.trim();
+      if (!trimmed.includes('|')) return false;
+      // Count dashes vs other chars (excluding pipes and spaces)
+      const withoutPipesAndSpaces = trimmed.replace(/[\|\s]/g, '');
+      const dashCount = (withoutPipesAndSpaces.match(/-/g) || []).length;
+      // If more than 50% are dashes (and has some dashes), it's likely a separator
+      return dashCount > 0 && dashCount >= withoutPipesAndSpaces.length * 0.5;
+    };
+
+    const separatorLines = tableLines.filter(isSeparatorLine);
+    const nonSeparatorLines = tableLines.filter(line => !isSeparatorLine(line));
 
     // If we have table content but no separator row yet, it's incomplete
     if (nonSeparatorLines.length > 0 && separatorLines.length === 0) {
@@ -521,16 +565,18 @@ const isLikelyIncomplete = (code: string): boolean => {
       return true;
     }
 
-    // Check if last data row has fewer columns than header (incomplete row)
-    if (nonSeparatorLines.length >= 2) {
+    // Check if last line ends with | but has fewer columns (incomplete row being typed)
+    const lastTableLine = tableLines[tableLines.length - 1].trim();
+    if (lastTableLine && !isSeparatorLine(lastTableLine)) {
       const headerLine = nonSeparatorLines[0];
-      const headerCols = headerLine.split('|').filter(s => s.trim()).length;
-      const lastRow = nonSeparatorLines[nonSeparatorLines.length - 1];
-      const lastRowCols = lastRow.split('|').filter(s => s.trim()).length;
+      if (headerLine) {
+        const headerCols = headerLine.split('|').filter(s => s.trim()).length;
+        const lastRowCols = lastTableLine.split('|').filter(s => s.trim()).length;
 
-      // Only flag as incomplete if clearly missing columns
-      if (lastRowCols > 0 && lastRowCols < headerCols - 1) {
-        return true;
+        // If last row has fewer columns than header, it's incomplete
+        if (lastRowCols > 0 && lastRowCols < headerCols) {
+          return true;
+        }
       }
     }
   }
@@ -539,6 +585,17 @@ const isLikelyIncomplete = (code: string): boolean => {
   const lastNonEmptyLine = lines.filter(l => l.trim()).pop() || '';
   if (lastNonEmptyLine.match(/^\w+:\s*$/) && !lastNonEmptyLine.includes('|')) {
     return true;
+  }
+
+  // Check if the last line looks like it's mid-typing (ends with partial content)
+  // e.g., "| January | 156 |" when more columns are expected
+  if (lastNonEmptyLine.endsWith('|') && tableLines.length > 0) {
+    // Could be mid-row, check if it's likely incomplete
+    const pipeCount = (lastNonEmptyLine.match(/\|/g) || []).length;
+    const headerPipes = tableLines[0] ? (tableLines[0].match(/\|/g) || []).length : 0;
+    if (pipeCount > 0 && pipeCount < headerPipes) {
+      return true;
+    }
   }
 
   return false;
@@ -566,8 +623,9 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
     // Check if data appears incomplete (streaming in progress)
     const incomplete = isLikelyIncomplete(code);
 
-    // Detect rapid updates (streaming) - updates faster than 100ms apart
-    const rapidUpdate = codeChanged && timeSinceLastUpdate < 100 && timeSinceLastUpdate > 0;
+    // Detect rapid updates (streaming) - updates faster than 500ms apart
+    // LLM streaming can have variable timing, so we use a more generous threshold
+    const rapidUpdate = codeChanged && timeSinceLastUpdate < 500 && timeSinceLastUpdate > 0;
     const likelyStreaming = incomplete || rapidUpdate;
 
     // Parse the current code
@@ -655,6 +713,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
       }
 
       // Debounce: wait for data to stabilize before final render
+      // Use longer debounce (400ms) to handle LLM streaming variability
       debounceTimerRef.current = setTimeout(() => {
         setIsStreaming(false);
         // Re-parse in case code changed during debounce
@@ -663,7 +722,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
           setError(null);
           setConfig(finalParsed);
         }
-      }, 200);
+      }, 400);
 
       // Show partial data while streaming (but still set it)
       setError(null);
@@ -927,44 +986,18 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
   };
 
   const xAxisHasLabel = Boolean(config.xAxisLabel);
-  const baseBottomMargin = 18;
-  const extraMarginForManyLabels = dataPointCount > 10 ? 16 : 0;
-  const estimatedAxisLabelHeight = xAxisHasLabel ? 20 : 0;
-  const estimatedLegendHeight = showLegend ? 24 : 0;
-  // Tighter gap when legend is present to keep label/legend close
-  const axisLabelGap = xAxisHasLabel
-    ? showLegend
-      ? shouldRotateLabels
-        ? 10
-        : 5
-      : shouldRotateLabels
-        ? 14
-        : 8
+
+  // Simplified bottom margin calculation
+  const baseBottomMargin = 5;
+  const tickLabelSpace = shouldRotateLabels ? Math.min(estimatedTickLabelHeight, 80) : 20;
+  const axisLabelSpace = xAxisHasLabel ? 24 : 0;
+  const legendSpace = showLegend ? 30 : 0;
+  // Extra space when both axis label and legend need to be pushed down due to rotated labels
+  const rotatedLabelExtra = shouldRotateLabels && (xAxisHasLabel || showLegend)
+    ? Math.max(estimatedTickLabelHeight - 30, 0)
     : 0;
-  // Keep legend just a hair below the axis label
-  const legendGap = showLegend
-    ? xAxisHasLabel
-      ? shouldRotateLabels
-        ? 1
-        : 0
-      : shouldRotateLabels
-        ? 8
-        : 5
-    : 0;
-  const spacingBuffer =
-    xAxisHasLabel && showLegend ? (shouldRotateLabels ? 1 : 0) : shouldRotateLabels ? 6 : 4;
-  // More aggressive optimization when both are present - they should be close together
-  const optimizedSpacing = xAxisHasLabel && showLegend ? 10 : 0;
-  const bottomMargin =
-    baseBottomMargin +
-    estimatedTickLabelHeight +
-    axisLabelGap +
-    estimatedAxisLabelHeight +
-    legendGap +
-    estimatedLegendHeight +
-    extraMarginForManyLabels +
-    spacingBuffer -
-    optimizedSpacing; // Reduce total margin when both are present
+
+  const bottomMargin = baseBottomMargin + tickLabelSpace + axisLabelSpace + legendSpace + rotatedLabelExtra;
 
   const chartMargin = {
     left: leftAxisLabelText ? 80 : 10,
@@ -973,12 +1006,9 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
     bottom: bottomMargin,
   };
 
-  const availableSpaceForLabel = Math.max(
-    bottomMargin - (estimatedLegendHeight + legendGap) - 8,
-    10
-  );
-  const desiredLabelOffset = Math.min(Math.max(Math.round(estimatedTickLabelHeight * 0.3), 8), 24);
-  const xAxisLabelOffset = Math.min(desiredLabelOffset + axisLabelGap * 0.75, availableSpaceForLabel);
+  // Calculate offset based on rotated label height to prevent overlap
+  const rotatedLabelOffset = shouldRotateLabels ? Math.max(estimatedTickLabelHeight - 30, 0) : 0;
+  const xAxisLabelOffset = rotatedLabelOffset;
   const xAxisLabel = xAxisHasLabel
     ? {
         value: config.xAxisLabel,
@@ -987,21 +1017,9 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
       }
     : undefined;
 
-  // When x-axis label exists, position legend directly below it with adequate spacing
-  // The x-axis label is positioned at offset from the bottom, so we need to account for that
-  // Calculate the space needed to position legend below the x-axis label with safe clearance
-  const xAxisLabelBottomSpace = xAxisHasLabel 
-    ? (estimatedAxisLabelHeight + (shouldRotateLabels ? 18 : 16))  // Space for label + generous gap for clear separation
-    : 0;
   const legendWrapperStyle = {
     color: textColor,
-    // Add padding to position legend below the x-axis label with safe clearance
-    // When x-axis label exists, we need padding to push legend below it
-    paddingTop: xAxisHasLabel 
-      ? xAxisLabelBottomSpace  // Position below x-axis label with safe spacing
-      : (legendGap || 6),
-    // Only use bottom offset when there's no x-axis label to anchor to
-    ...(xAxisHasLabel ? {} : { bottom: showLegend ? Math.max(6, spacingBuffer + 4) : undefined }),
+    paddingTop: (xAxisHasLabel ? 24 : 0) + rotatedLabelOffset,
   };
 
   return (
@@ -1050,10 +1068,11 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
         <h4
           style={{
             textAlign: 'center',
-            marginBottom: config.description ? '4px' : (config.type === 'pie' ? '20px' : '12px'),
+            marginBottom: config.description ? '4px' : '12px',
             marginTop: 0,
             color: textColor,
             fontWeight: 600,
+            background: 'transparent',
           }}
         >
           {config.title}
@@ -1337,8 +1356,8 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               dataKey={config.dataKeys?.[0] || 'value'}
               nameKey={config.xKey || 'name'}
               cx="50%"
-              cy="45%"
-              outerRadius={height / 3.2}
+              cy="50%"
+              outerRadius={height / 3}
               label={{ fill: textColor }}
             >
               {config.data.map((_: unknown, index: number) => (
