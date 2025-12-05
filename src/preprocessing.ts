@@ -56,6 +56,51 @@ function maskInlineMath(src: string) {
   return { masked: src, masks };
 }
 
+/**
+ * Ensure Markdown tables start on their own line even if the LLM placed them
+ * immediately after punctuation like ":" without a newline.
+ */
+function normalizeInlineTables(src: string) {
+  const lines = src.split('\n');
+  for (let i = 0; i < lines.length - 1; i++) {
+    const line = lines[i];
+    const nextLine = lines[i + 1] ?? '';
+    if (!line || !nextLine) continue;
+
+    const nextTrim = nextLine.trim();
+    const looksLikeSeparator =
+      nextTrim.startsWith('|') &&
+      nextTrim.includes('-');
+    if (!looksLikeSeparator) continue;
+
+    const firstPipe = line.indexOf('|');
+    if (firstPipe <= 0) continue; // Already at start or no table detected
+
+    const prefix = line.slice(0, firstPipe);
+    if (!prefix || prefix.trim() === '') continue;
+
+    const trimmedPrefix = prefix.trim();
+    const prefixWithoutSpaces = trimmedPrefix.replace(/\s+/g, '');
+    const isBlockQuotePrefix = prefixWithoutSpaces !== '' && /^[>]+$/.test(prefixWithoutSpaces);
+    const isListPrefix = /^[-*+]\s*$/.test(trimmedPrefix);
+    const isOrderedListPrefix = /^\d+\.\s*$/.test(trimmedPrefix);
+    if (isBlockQuotePrefix || isListPrefix || isOrderedListPrefix) continue;
+
+    const tableHeader = line.slice(firstPipe);
+    const pipeCount = (tableHeader.match(/\|/g) || []).length;
+    if (pipeCount < 2) continue; // Need at least header + one column separator
+
+    const beforeLine = prefix.replace(/\s+$/, '');
+    const normalizedHeader = tableHeader.replace(/^\s+/, '');
+    if (!beforeLine) continue;
+
+    lines.splice(i, 1, beforeLine, normalizedHeader);
+    i++; // Skip past the newly inserted header line
+  }
+
+  return lines.join('\n');
+}
+
 function unmaskCodeSegments(src: string, masks: Record<string, string>) {
   for (const [k, v] of Object.entries(masks)) {
     const pattern = new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
@@ -82,6 +127,10 @@ export const preprocessMarkdown = (content: string): string => {
     
     // Convert HTML <br> tags into newline characters so they render like real line breaks
     processed = processed.replace(/<br\s*\/?>/gi, '\n');
+    
+    // LLMs sometimes keep the first table row on the same line as preceding text (e.g. "Table: | Col |")
+    // ReactMarkdown expects the table to start on a fresh line, so split those constructs.
+    processed = normalizeInlineTables(processed);
     
     // 0.5) Process currency BEFORE masking inline math to avoid conflicts
     //      Temporarily replace currency with placeholders

@@ -1,3 +1,17 @@
+export const llmInlineTableResponse = `## Inline Table Response
+
+These emojis came from an LLM answer that kept the table header on the same line as the prose, which previously failed to render:
+| Object   | Description                                                                 | Colors                                                                 | Notable Features                                                                 |
+|----------|-----------------------------------------------------------------------------|--------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| **Apple** | Whole red apple with a green leaf attached to the stem                     | Red (apple), green (leaf)                                               | Fresh appearance, leaf attached to stem                                             |
+| **Book**  | Closed book with a dark blue cover and a lighter beige spine              | Dark blue (cover), beige (spine)                                         | Rectangular shape, typical book design                                            |
+| **Bicycle** | Red bicycle with black tires and a black seat                             | Red (frame), black (tires, seat)                                         | Classic design, upright seating position                                          |
+| **Cat**   | Tabby cat sitting upright with striped coat                                | Brown/black stripes, greenish-yellow eyes                              | Feline fur pattern, upright posture                                                |
+| **Pizza** | Pepperoni pizza with a golden crust and red pepperoni slices              | Golden brown (crust), red (pepperoni)                                    | Classic pizza toppings, melted cheese (inferred)                                   |
+| **Shoe**  | Gray sneaker with white soles and black laces                             | Gray (upper), white (sole), black (laces)                               | Casual design, athletic styling                                                    |
+
+The renderer should normalize the table onto its own line so ReactMarkdown can render it even when used inside another application.`;
+
 export const testCases = [
   {
     title: 'Basic Markdown',
@@ -155,6 +169,10 @@ Classification Escalation Attempts: 42 denials where users attempted to access d
 | Left        | Center         | Right         |
 | Lorem       | Ipsum          | Dolor         |
 | Sit         | Amet           | Consectetur   |`
+  },
+  {
+    title: 'LLM Inline Table Response',
+    content: llmInlineTableResponse,
   },
   {
     title: 'Wide Tables (Horizontal Scrolling)',

@@ -8,6 +8,10 @@ import './App.css';
 
 type ThemeMode = 'system' | 'light' | 'dark';
 
+const inlineTableTestIndex = testCases.findIndex(
+  (test) => test.title === 'LLM Inline Table Response'
+);
+
 function App() {
   const [selectedTest, setSelectedTest] = useState(0);
   const [customContent, setCustomContent] = useState('');
@@ -22,6 +26,7 @@ function App() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [showMultiChart, setShowMultiChart] = useState(false);
   const [themeMode, setThemeMode] = useState<ThemeMode>('system');
+  const selectedTestCase = testCases[selectedTest];
 
   // Determine the effective theme class for the markdown content
   const getThemeClass = (): string => {
@@ -92,6 +97,23 @@ function App() {
                 {test.title}
               </button>
             ))}
+            
+            {inlineTableTestIndex >= 0 && (
+              <button
+                className={`test-button inline-table ${selectedTest === inlineTableTestIndex && !useCustom && !showStressTest && !showIntegration && !showDebug && !showStreamingTest && !showMultiChart ? 'active' : ''}`}
+                onClick={() => {
+                  setSelectedTest(inlineTableTestIndex);
+                  setUseCustom(false);
+                  setShowStressTest(false);
+                  setShowIntegration(false);
+                  setShowDebug(false);
+                  setShowStreamingTest(false);
+                  setShowMultiChart(false);
+                }}
+              >
+                🧪 LLM Inline Table
+              </button>
+            )}
             
             <button
               className={`test-button stress ${showStressTest ? 'active' : ''}`}
@@ -332,6 +354,13 @@ Try:
           ) : (
             <div className="test-info">
               <h2>{showStressTest ? '🔥 Stress Test' : testCases[selectedTest].title}</h2>
+              {!showStressTest && selectedTestCase?.title === 'LLM Inline Table Response' && (
+                <p className="note">
+                  This reproduces an LLM response where a table immediately follows punctuation,
+                  ensuring our preprocessing still renders the table correctly even when this package
+                  is embedded in another application.
+                </p>
+              )}
               {showStressTest && (
                 <p className="warning">⚠️ This test contains a large amount of content to test performance</p>
               )}
