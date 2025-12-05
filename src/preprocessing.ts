@@ -62,6 +62,8 @@ function maskInlineMath(src: string) {
  */
 function normalizeInlineTables(src: string) {
   const lines = src.split('\n');
+
+  // First pass: handle tables on the same line as preceding text (e.g., "Table: | Col |")
   for (let i = 0; i < lines.length - 1; i++) {
     const line = lines[i];
     const nextLine = lines[i + 1] ?? '';
@@ -98,7 +100,39 @@ function normalizeInlineTables(src: string) {
     i++; // Skip past the newly inserted header line
   }
 
-  return lines.join('\n');
+  // Second pass: ensure blank line before tables that start with | on their own line
+  // This handles cases like:
+  //   some text
+  //   | Header | Header |
+  //   |--------|--------|
+  // Which need a blank line before the table for GFM to recognize it
+  const result: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lineTrim = line.trim();
+    const nextLine = lines[i + 1] ?? '';
+    const nextTrim = nextLine.trim();
+
+    // Check if this line is a table header row (starts with |, has multiple |, followed by separator row)
+    const isTableHeader =
+      lineTrim.startsWith('|') &&
+      (lineTrim.match(/\|/g) || []).length >= 2 &&
+      nextTrim.startsWith('|') &&
+      /^[\s|:-]+$/.test(nextTrim) &&
+      nextTrim.includes('-');
+
+    if (isTableHeader && result.length > 0) {
+      const prevLine = result[result.length - 1];
+      // If previous line is not empty and not already a blank line, insert one
+      if (prevLine.trim() !== '') {
+        result.push('');
+      }
+    }
+
+    result.push(line);
+  }
+
+  return result.join('\n');
 }
 
 function unmaskCodeSegments(src: string, masks: Record<string, string>) {

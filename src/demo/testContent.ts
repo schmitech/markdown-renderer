@@ -1,4 +1,19 @@
-export const llmInlineTableResponse = `## Inline Table Response
+// Test case for tables that start on their own line but without a blank line before them
+// This is common in LLM responses where text is followed immediately by a table
+export const llmTableWithoutBlankLine = `Here's a comparison of popular programming languages:
+| Language      | Primary Use Case                     | Popularity (2025) | Learning Curve | Key Features                          |
+|---------------|--------------------------------------|-------------------|----------------|---------------------------------------|
+| **Python**    | Web dev, AI/ML, scripting, data analysis | ★★★★★ (Top 1)     | Easy           | Simple syntax, huge libraries (NumPy, Pandas) |
+| **JavaScript**| Web development (frontend/backend)    | ★★★★★ (Top 2)     | Medium         | Runs in browsers, versatile frameworks (React, Node.js) |
+| **Java**      | Enterprise apps, Android dev          | ★★★★☆             | Hard           | Strong typing, object-oriented, scalable |
+| **C++**       | Game engines, high-performance apps   | ★★★☆☆             | Hard           | Low-level control, speed, memory management |
+| **R**         | Statistics, data visualization        | ★★★☆☆             | Medium         | Specialized for analytics, ggplot2 library |
+| **Go**        | Cloud services, microservices         | ★★★★☆             | Easy           | Fast compilation, concurrency support |
+| **Swift**     | iOS/macOS app development             | ★★★☆☆             | Medium         | Modern syntax, Apple ecosystem focus |
+
+The table above shows the key differences between these languages.`;
+
+export const llmInlineTableContent = `## Inline Table Response
 
 These emojis came from an LLM answer that kept the table header on the same line as the prose, which previously failed to render:
 | Object   | Description                                                                 | Colors                                                                 | Notable Features                                                                 |
@@ -172,7 +187,11 @@ Classification Escalation Attempts: 42 denials where users attempted to access d
   },
   {
     title: 'LLM Inline Table Response',
-    content: llmInlineTableResponse,
+    content: llmInlineTableContent,
+  },
+  {
+    title: 'LLM Table Without Blank Line',
+    content: llmTableWithoutBlankLine,
   },
   {
     title: 'Wide Tables (Horizontal Scrolling)',
