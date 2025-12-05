@@ -27,6 +27,393 @@ These emojis came from an LLM answer that kept the table header on the same line
 
 The renderer should normalize the table onto its own line so ReactMarkdown can render it even when used inside another application.`;
 
+export const languageShowcaseContent = `# Programming Language Showcase
+
+Quick references for a variety of syntaxes so syntax highlighting and code block rendering can be validated across ecosystems.
+
+### Rust
+\`\`\`rust
+fn fibonacci(n: u32) -> u32 {
+    match n {
+        0 | 1 => n,
+        _ => fibonacci(n - 1) + fibonacci(n - 2),
+    }
+}
+
+fn main() {
+    println!("fib(10) = {}", fibonacci(10));
+}
+\`\`\`
+
+### Go
+\`\`\`go
+package main
+
+import "fmt"
+
+func worker(id int, jobs <-chan int) {
+    for job := range jobs {
+        fmt.Printf("worker %d handling job %d\\n", id, job)
+    }
+}
+
+func main() {
+    jobs := make(chan int, 2)
+    go worker(1, jobs)
+    jobs <- 1
+    jobs <- 2
+    close(jobs)
+}
+\`\`\`
+
+### Java
+\`\`\`java
+public record User(String id, String email) {}
+
+public class UserService {
+    public Optional<User> find(String id) {
+        return Optional.of(new User(id, id + "@example.com"));
+    }
+}
+\`\`\`
+
+### Kotlin
+\`\`\`kotlin
+data class Session(val id: String, val isActive: Boolean)
+
+fun List<Session>.activeCount() = count { it.isActive }
+\`\`\`
+
+### Swift
+\`\`\`swift
+struct Person: Identifiable {
+    let id = UUID()
+    let name: String
+}
+
+let team = [Person(name: "Ada"), Person(name: "Grace")]
+print(team.map(\.name).joined(separator: ", "))
+\`\`\`
+
+### C#
+\`\`\`csharp
+public static async Task<IEnumerable<string>> LoadAsync(HttpClient client, IEnumerable<string> urls)
+{
+    var tasks = urls.Select(url => client.GetStringAsync(url));
+    return await Task.WhenAll(tasks);
+}
+\`\`\`
+
+### C++
+\`\`\`cpp
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<int> values{1, 2, 3};
+    for (auto value : values) {
+        std::cout << value << std::endl;
+    }
+    return 0;
+}
+\`\`\`
+
+### PHP
+\`\`\`php
+<?php
+
+function greet(string $name = "world"): string {
+    return sprintf("Hello, %s!", ucfirst($name));
+}
+
+echo greet("markdown");
+\`\`\`
+
+### Ruby
+\`\`\`ruby
+class Queue
+  def initialize
+    @items = []
+  end
+
+  def push(item)
+    @items << item
+  end
+end
+\`\`\`
+
+### Bash
+\`\`\`bash
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+for file in *.md; do
+  echo "Linting $file"
+done
+\`\`\`
+
+### PowerShell
+\`\`\`powershell
+$Path = "C:\\\\logs"
+Get-ChildItem -Path $Path -Filter "*.log" | ForEach-Object {
+  Write-Host "Found $($_.Name)"
+}
+\`\`\`
+
+### SQL
+\`\`\`sql
+WITH recent_orders AS (
+  SELECT id, total, status, created_at
+  FROM orders
+  WHERE created_at >= NOW() - INTERVAL '30 days'
+)
+SELECT status, COUNT(*)
+FROM recent_orders
+GROUP BY status;
+\`\`\`
+
+### GraphQL
+\`\`\`graphql
+query UserDetail($id: ID!) {
+  user(id: $id) {
+    id
+    name
+    teams {
+      id
+      name
+    }
+  }
+}
+\`\`\`
+
+### JSON
+\`\`\`json
+{
+  "service": "inventory",
+  "version": 3,
+  "features": ["restock", "reservations", "alerts"]
+}
+\`\`\`
+
+### YAML
+\`\`\`yaml
+environments:
+  production:
+    region: us-east-1
+    replicas: 6
+  staging:
+    region: us-west-2
+    replicas: 2
+\`\`\`
+
+### MATLAB
+\`\`\`matlab
+function y = damped_sine(x, damping)
+    y = exp(-damping * x) .* sin(x);
+end
+\`\`\`
+
+### R
+\`\`\`r
+library(dplyr)
+
+summary <- iris %>%
+  group_by(Species) %>%
+  summarise(across(everything(), mean))
+\`\`\`
+`;
+
+export type CodeSample = {
+  language: string;
+  description: string;
+  markdown: string;
+  preview: string;
+};
+
+export const codeSampleLibrary: CodeSample[] = [
+  {
+    language: 'Rust',
+    description: 'Ownership, borrowing, and iterator pipelines.',
+    markdown: `### Rust Iterator Sample
+
+\`\`\`rust
+fn total_length(values: &[String]) -> usize {
+    values.iter().map(|value| value.len()).sum()
+}
+
+fn main() {
+    let values = vec![String::from("foo"), String::from("bar")];
+    println!("{}", total_length(&values));
+}
+\`\`\`
+`,
+    preview: `fn total_length(values: &[String]) -> usize {\n    values.iter().map(|value| value.len()).sum()\n}`,
+  },
+  {
+    language: 'Go',
+    description: 'Goroutines communicating over buffered channels.',
+    markdown: `### Go Routine Sample
+
+\`\`\`go
+package main
+
+import "fmt"
+
+func main() {
+    jobs := make(chan int, 3)
+    go func() {
+        for job := range jobs {
+            fmt.Println("job", job)
+        }
+    }()
+    jobs <- 1
+    jobs <- 2
+    close(jobs)
+}
+\`\`\`
+`,
+    preview: `jobs := make(chan int, 3)\ngo func() {\n    for job := range jobs {\n        fmt.Println("job", job)\n    }\n}()`,
+  },
+  {
+    language: 'Kotlin',
+    description: 'Extension function using data classes and null safety.',
+    markdown: `### Kotlin DSL Sample
+
+\`\`\`kotlin
+data class Feature(val name: String, val enabled: Boolean = true)
+
+fun Collection<Feature>.enabledNames() =
+    filter { it.enabled }.joinToString { it.name }
+\`\`\`
+`,
+    preview: `fun Collection<Feature>.enabledNames() =\n    filter { it.enabled }.joinToString { it.name }`,
+  },
+  {
+    language: 'Swift',
+    description: 'SwiftUI inspired struct with computed property.',
+    markdown: `### Swift Struct Sample
+
+\`\`\`swift
+struct Report {
+    let name: String
+    var pages: Int
+
+    var summary: String {
+        "\\\\(name) contains \\\\(pages) pages"
+    }
+}
+\`\`\`
+`,
+    preview: `struct Report {\n    let name: String\n    var pages: Int\n\n    var summary: String {\n        \"\\(name) contains \\(pages) pages\"\n    }\n}`,
+  },
+  {
+    language: 'C#',
+    description: 'Async LINQ query with record types.',
+    markdown: `### C# Async Enumerable
+
+\`\`\`csharp
+public record Invoice(int Id, decimal Amount);
+
+public async IAsyncEnumerable<Invoice> LoadInvoicesAsync(HttpClient client) {
+    var ids = Enumerable.Range(1, 3);
+    foreach (var id in ids) {
+        var amount = decimal.Parse(await client.GetStringAsync($"/invoices/{id}"));
+        yield return new Invoice(id, amount);
+    }
+}
+\`\`\`
+`,
+    preview: `public record Invoice(int Id, decimal Amount);\n\npublic async IAsyncEnumerable<Invoice> LoadInvoicesAsync(HttpClient client) {`,
+  },
+  {
+    language: 'PHP',
+    description: 'Named arguments and concise arrow functions.',
+    markdown: `### PHP Collection Helpers
+
+\`\`\`php
+$totals = array_map(
+    fn (int $value) => $value * 2,
+    range(1, 5)
+);
+
+print_r($totals);
+\`\`\`
+`,
+    preview: `$totals = array_map(\n    fn (int $value) => $value * 2,\n    range(1, 5)\n);`,
+  },
+  {
+    language: 'SQL',
+    description: 'Window functions measuring revenue momentum.',
+    markdown: `### SQL Window Functions
+
+\`\`\`sql
+SELECT
+  region,
+  month,
+  revenue,
+  SUM(revenue) OVER (PARTITION BY region ORDER BY month) AS running_total
+FROM sales;
+\`\`\`
+`,
+    preview: `SUM(revenue) OVER (PARTITION BY region ORDER BY month) AS running_total`,
+  },
+  {
+    language: 'Bash',
+    description: 'Strict shell script iterating with guards.',
+    markdown: `### Bash Strict Mode
+
+\`\`\`bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+while read -r line; do
+  [[ -z "$line" ]] && continue
+  echo "-> $line"
+done < input.txt
+\`\`\`
+`,
+    preview: `set -euo pipefail\n\nwhile read -r line; do\n  [[ -z \"$line\" ]] && continue`,
+  },
+  {
+    language: 'JSON',
+    description: 'Sample configuration for feature flags.',
+    markdown: `### JSON Feature Flags
+
+\`\`\`json
+{
+  "featureFlags": {
+    "betaDashboard": true,
+    "reranking": {
+      "enabled": true,
+      "weight": 0.42
+    }
+  }
+}
+\`\`\`
+`,
+    preview: `"reranking": {\n  "enabled": true,\n  "weight": 0.42\n}`,
+  },
+  {
+    language: 'YAML',
+    description: 'Deployment manifest with anchors.',
+    markdown: `### YAML Template
+
+\`\`\`yaml
+defaults: &defaults
+  retries: 3
+  timeout: 30s
+
+jobs:
+  deploy:
+    <<: *defaults
+    region: eu-central-1
+\`\`\`
+`,
+    preview: `defaults: &defaults\n  retries: 3\n  timeout: 30s`,
+  },
+];
+
 export const testCases = [
   {
     title: 'Basic Markdown',
@@ -114,6 +501,10 @@ const getUser = async (id: number): Promise<User> => {
   return response.json();
 };
 \`\`\``
+  },
+  {
+    title: 'Programming Language Showcase',
+    content: languageShowcaseContent,
   },
   {
     title: 'Inline Code (Single Backticks)',

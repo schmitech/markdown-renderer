@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { MarkdownRenderer } from '../MarkdownComponents';
 import '../MarkdownStyles.css';
-import testCases, { stressTestContent, streamingChartStages, multiChartStreamingContent } from './testContent';
+import testCases, {
+  stressTestContent,
+  streamingChartStages,
+  multiChartStreamingContent,
+  codeSampleLibrary,
+} from './testContent';
+import type { CodeSample } from './testContent';
 import { SampleIntegration } from './SampleIntegration';
 import { DebugMath } from './DebugMath';
 import './App.css';
@@ -26,6 +32,7 @@ function App() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [showMultiChart, setShowMultiChart] = useState(false);
   const [themeMode, setThemeMode] = useState<ThemeMode>('system');
+  const [selectedSample, setSelectedSample] = useState<CodeSample | null>(null);
   const selectedTestCase = testCases[selectedTest];
 
   // Determine the effective theme class for the markdown content
@@ -33,6 +40,31 @@ function App() {
     if (themeMode === 'light') return 'light';
     if (themeMode === 'dark') return 'dark';
     return ''; // system preference - no class, CSS handles it
+  };
+
+  const clearSampleSelection = () => {
+    if (selectedSample) {
+      setSelectedSample(null);
+    }
+  };
+
+  const activateCustomMode = (content: string, sample?: CodeSample | null) => {
+    setUseCustom(true);
+    setShowStressTest(false);
+    setShowIntegration(false);
+    setShowDebug(false);
+    setShowStreamingTest(false);
+    setShowMultiChart(false);
+    setCustomContent(content);
+    if (sample) {
+      setSelectedSample(sample);
+    } else {
+      setSelectedSample(null);
+    }
+  };
+
+  const handleCodeSampleSelect = (sample: CodeSample) => {
+    activateCustomMode(sample.markdown, sample);
   };
 
   const currentContent = showStreamingTest
@@ -85,6 +117,7 @@ function App() {
                 key={index}
                 className={`test-button ${selectedTest === index && !useCustom && !showStressTest && !showIntegration && !showDebug && !showStreamingTest && !showMultiChart ? 'active' : ''}`}
                 onClick={() => {
+                  clearSampleSelection();
                   setSelectedTest(index);
                   setUseCustom(false);
                   setShowStressTest(false);
@@ -102,6 +135,7 @@ function App() {
               <button
                 className={`test-button inline-table ${selectedTest === inlineTableTestIndex && !useCustom && !showStressTest && !showIntegration && !showDebug && !showStreamingTest && !showMultiChart ? 'active' : ''}`}
                 onClick={() => {
+                  clearSampleSelection();
                   setSelectedTest(inlineTableTestIndex);
                   setUseCustom(false);
                   setShowStressTest(false);
@@ -118,6 +152,7 @@ function App() {
             <button
               className={`test-button stress ${showStressTest ? 'active' : ''}`}
               onClick={() => {
+                clearSampleSelection();
                 setShowStressTest(true);
                 setUseCustom(false);
                 setShowIntegration(false);
@@ -132,12 +167,8 @@ function App() {
             <button
               className={`test-button custom ${useCustom ? 'active' : ''}`}
               onClick={() => {
-                setUseCustom(true);
-                setShowStressTest(false);
-                setShowIntegration(false);
-                setShowDebug(false);
-                setShowStreamingTest(false);
-                setShowMultiChart(false);
+                clearSampleSelection();
+                activateCustomMode(customContent);
               }}
             >
               ✏️ Custom Input
@@ -146,6 +177,7 @@ function App() {
             <button
               className={`test-button integration ${showIntegration ? 'active' : ''}`}
               onClick={() => {
+                clearSampleSelection();
                 setShowIntegration(true);
                 setUseCustom(false);
                 setShowStressTest(false);
@@ -160,6 +192,7 @@ function App() {
             <button
               className={`test-button debug ${showDebug ? 'active' : ''}`}
               onClick={() => {
+                clearSampleSelection();
                 setShowDebug(true);
                 setShowIntegration(false);
                 setUseCustom(false);
@@ -174,6 +207,7 @@ function App() {
             <button
               className={`test-button streaming ${showStreamingTest ? 'active' : ''}`}
               onClick={() => {
+                clearSampleSelection();
                 setShowStreamingTest(true);
                 setShowDebug(false);
                 setShowIntegration(false);
@@ -189,6 +223,7 @@ function App() {
             <button
               className={`test-button multichart ${showMultiChart ? 'active' : ''}`}
               onClick={() => {
+                clearSampleSelection();
                 setShowMultiChart(true);
                 setShowStreamingTest(false);
                 setShowDebug(false);
@@ -252,6 +287,37 @@ function App() {
                 />
                 Dark
               </label>
+            </div>
+
+            <div className="code-sample-library">
+              <h3>Code Sample Library</h3>
+              <p className="code-sample-note">
+                Load curated snippets to exercise syntax highlighting across ecosystems.
+              </p>
+              <div className="code-sample-grid">
+                {codeSampleLibrary.map((sample) => (
+                  <button
+                    key={sample.language}
+                    className={`code-sample-button ${selectedSample?.language === sample.language ? 'active' : ''}`}
+                    onClick={() => handleCodeSampleSelect(sample)}
+                    type="button"
+                  >
+                    {sample.language}
+                  </button>
+                ))}
+              </div>
+              {selectedSample && (
+                <div className="code-sample-preview">
+                  <strong>{selectedSample.language}</strong>
+                  <p>{selectedSample.description}</p>
+                  <pre>
+                    <code>{selectedSample.preview}</code>
+                  </pre>
+                  <span className="code-sample-hint">
+                    Loaded into Custom Input for further editing.
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </aside>
@@ -337,7 +403,12 @@ function App() {
               <textarea
                 className="custom-input"
                 value={customContent}
-                onChange={(e) => setCustomContent(e.target.value)}
+                onChange={(e) => {
+                  if (selectedSample) {
+                    setSelectedSample(null);
+                  }
+                  setCustomContent(e.target.value);
+                }}
                 placeholder="Enter your markdown here...
 
 Try:

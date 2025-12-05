@@ -196,6 +196,76 @@ body {
   cursor: pointer;
 }
 
+.code-sample-library {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.code-sample-note {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.code-sample-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.code-sample-button {
+  flex: 1 1 45%;
+  background: #f8fafc;
+  border: 1px solid #cbd5f5;
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: #1e293b;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.code-sample-button.active {
+  background: #4338ca;
+  color: #fff;
+  border-color: #4338ca;
+}
+
+.code-sample-button:hover {
+  background: #e0e7ff;
+}
+
+.code-sample-preview {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: #f1f5f9;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.code-sample-preview p {
+  font-size: 0.85rem;
+  color: #475569;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.code-sample-preview pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  overflow-x: auto;
+}
+
+.code-sample-hint {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: #52525b;
+}
+
 .main-content {
   flex: 1;
   background: rgba(255, 255, 255, 0.95);

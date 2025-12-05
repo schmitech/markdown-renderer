@@ -46,6 +46,133 @@ const detectTheme = (element: HTMLElement | null): ThemeMode => {
   return 'light';
 };
 
+const useEffectiveTheme = (
+  ref: React.RefObject<HTMLElement>,
+  explicitTheme?: ThemeMode
+): ThemeMode => {
+  const [detectedTheme, setDetectedTheme] = useState<ThemeMode>('light');
+
+  useEffect(() => {
+    if (explicitTheme) {
+      return;
+    }
+
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
+    const updateTheme = () => {
+      setDetectedTheme(detectTheme(ref.current));
+    };
+
+    updateTheme();
+
+    const prefersDarkQuery = window.matchMedia?.('(prefers-color-scheme: dark)') ?? null;
+    const handleMediaChange = () => updateTheme();
+
+    if (prefersDarkQuery) {
+      if (prefersDarkQuery.addEventListener) {
+        prefersDarkQuery.addEventListener('change', handleMediaChange);
+      } else if (prefersDarkQuery.addListener) {
+        prefersDarkQuery.addListener(handleMediaChange);
+      }
+    }
+
+    const observer =
+      typeof MutationObserver !== 'undefined'
+        ? new MutationObserver(() => updateTheme())
+        : null;
+
+    if (observer) {
+      const markdownContent = ref.current?.closest?.('.markdown-content') ?? null;
+      if (markdownContent) {
+        observer.observe(markdownContent, {
+          attributes: true,
+          attributeFilter: ['class', 'data-theme'],
+        });
+      }
+
+      if (document.body) {
+        observer.observe(document.body, {
+          attributes: true,
+          attributeFilter: ['class', 'data-theme'],
+        });
+      }
+    }
+
+    return () => {
+      if (prefersDarkQuery) {
+        if (prefersDarkQuery.removeEventListener) {
+          prefersDarkQuery.removeEventListener('change', handleMediaChange);
+        } else if (prefersDarkQuery.removeListener) {
+          prefersDarkQuery.removeListener(handleMediaChange);
+        }
+      }
+      observer?.disconnect();
+    };
+  }, [explicitTheme, ref]);
+
+  return explicitTheme ?? detectedTheme;
+};
+
+const LANGUAGE_ALIASES: Record<string, string> = {
+  js: 'javascript',
+  jsx: 'javascript',
+  ts: 'typescript',
+  tsx: 'tsx',
+  sh: 'bash',
+  shell: 'bash',
+  shellsession: 'bash',
+  yml: 'yaml',
+  yaml: 'yaml',
+  py: 'python',
+  rb: 'ruby',
+  kt: 'kotlin',
+  md: 'markdown',
+  csharp: 'csharp',
+  'c#': 'csharp',
+  'c++': 'cpp',
+  tf: 'hcl',
+  terraform: 'hcl',
+  docker: 'dockerfile',
+  dotenv: 'env',
+  env: 'env',
+  plaintext: 'text',
+  text: 'text',
+};
+
+const extractLanguageFromClassName = (className?: string | null): string => {
+  if (!className) return '';
+
+  const languageMatch = className.match(/(?:^|\s)language-([^\s]+)/);
+  if (!languageMatch) return '';
+
+  const raw = languageMatch[1].toLowerCase();
+  const sanitized = raw
+    .split('{')[0]
+    .split('[')[0]
+    .split('<')[0]
+    .split(':')[0]
+    .trim()
+    .replace(/[^a-z0-9+#-]+$/g, '');
+
+  if (!sanitized) return '';
+
+  return LANGUAGE_ALIASES[sanitized] ?? sanitized;
+};
+
+const getCodeFromChildren = (children: React.ReactNode): string => {
+  return React.Children.toArray(children)
+    .map((child) => {
+      if (typeof child === 'string' || typeof child === 'number') {
+        return String(child);
+      }
+      return '';
+    })
+    .join('')
+    .replace(/\n$/, '');
+};
+
 // Copy button component for code blocks
 const CopyButton: React.FC<{ code: string }> = ({ code }) => {
   const [copied, setCopied] = useState(false);
@@ -110,63 +237,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   syntaxTheme,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [detectedTheme, setDetectedTheme] = useState<ThemeMode | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  // Mark as mounted after first render
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Detect theme from context - runs after mount when ref is available
-  useEffect(() => {
-    if (!mounted) return;
-
-    const updateTheme = () => {
-      const theme = detectTheme(containerRef.current);
-      setDetectedTheme(theme);
-    };
-
-    // Initial detection (after mount, ref should be available)
-    updateTheme();
-
-    // Listen for system theme changes
-    if (typeof window !== 'undefined' && window.matchMedia) {
-      const prefersDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-      const handleMediaChange = () => updateTheme();
-
-      if (prefersDarkQuery.addEventListener) {
-        prefersDarkQuery.addEventListener('change', handleMediaChange);
-      } else if (prefersDarkQuery.addListener) {
-        prefersDarkQuery.addListener(handleMediaChange);
-      }
-
-      // Also observe DOM for class changes on ancestors
-      const observer = new MutationObserver(() => updateTheme());
-      if (containerRef.current) {
-        // Observe the markdown-content ancestor if it exists
-        const markdownContent = containerRef.current.closest('.markdown-content');
-        if (markdownContent) {
-          observer.observe(markdownContent, { attributes: true, attributeFilter: ['class', 'data-theme'] });
-        }
-        // Also observe document body for theme changes
-        observer.observe(document.body, { attributes: true, attributeFilter: ['class', 'data-theme'] });
-      }
-
-      return () => {
-        if (prefersDarkQuery.removeEventListener) {
-          prefersDarkQuery.removeEventListener('change', handleMediaChange);
-        } else if (prefersDarkQuery.removeListener) {
-          prefersDarkQuery.removeListener(handleMediaChange);
-        }
-        observer.disconnect();
-      };
-    }
-  }, [mounted]);
-
-  // Use explicit prop if provided, otherwise use detected theme, fallback to light
-  const effectiveTheme = syntaxTheme ?? detectedTheme ?? 'light';
+  const effectiveTheme = useEffectiveTheme(containerRef, syntaxTheme);
 
   // Handle inline code (always render as code)
   if (inline) {
@@ -174,9 +245,8 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   }
 
   // Extract language from className (e.g., "language-mermaid" -> "mermaid")
-  const match = /language-(\w+)/.exec(className || '');
-  const language = match ? match[1].toLowerCase() : '';
-  const code = String(children).replace(/\n$/, '');
+  const language = extractLanguageFromClassName(className);
+  const code = getCodeFromChildren(children);
 
   // Route to chart renderer (if enabled)
   if (enableCharts && (language === 'chart' || language === 'chart-json' || language === 'chart-table')) {
@@ -218,23 +288,27 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   // Use syntax highlighting for regular code blocks
   if (enableSyntaxHighlighting && language) {
     const style = effectiveTheme === 'light' ? vs : vscDarkPlus;
-    return (
-      <div ref={containerRef} className="syntax-highlighted-wrapper code-block-container">
-        <CopyButton code={code} />
-        <SyntaxHighlighter
-          language={language}
-          style={style}
-          customStyle={{
-            margin: '12px 0',
-            borderRadius: '6px',
-            fontSize: '0.9em',
-          }}
-          showLineNumbers={false}
-        >
-          {code}
-        </SyntaxHighlighter>
-      </div>
-    );
+    try {
+      return (
+        <div ref={containerRef} className="syntax-highlighted-wrapper code-block-container">
+          <CopyButton code={code} />
+          <SyntaxHighlighter
+            language={language}
+            style={style}
+            customStyle={{
+              margin: '12px 0',
+              borderRadius: '6px',
+              fontSize: '0.9em',
+            }}
+            showLineNumbers={false}
+          >
+            {code}
+          </SyntaxHighlighter>
+        </div>
+      );
+    } catch (error: unknown) {
+      console.warn(`Syntax highlighting failed for "${language}". Falling back to plain code block.`, error);
+    }
   }
 
   // Fallback: render as normal code block
@@ -248,4 +322,3 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
     </div>
   );
 };
-

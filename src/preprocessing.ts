@@ -1,4 +1,56 @@
 /**
+ * Detect if content inside a code block is actually a markdown table that should be rendered
+ * as a GFM table rather than as code. This handles cases where LLMs wrap tables in code blocks.
+ */
+function isMarkdownTableContent(content: string): boolean {
+  const lines = content.trim().split('\n');
+  if (lines.length < 2) return false;
+
+  // Check if first line looks like a table header (starts with | and has multiple |)
+  const firstLine = lines[0].trim();
+  if (!firstLine.startsWith('|') || (firstLine.match(/\|/g) || []).length < 2) {
+    return false;
+  }
+
+  // Check if second line is a separator row (contains |, -, and optionally :)
+  const secondLine = lines[1].trim();
+  if (!secondLine.startsWith('|') || !/^[\s|:\-]+$/.test(secondLine) || !secondLine.includes('-')) {
+    return false;
+  }
+
+  // Check remaining lines also look like table rows
+  for (let i = 2; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line === '') continue; // Allow empty lines
+    if (!line.startsWith('|')) return false;
+  }
+
+  return true;
+}
+
+/**
+ * Unwrap markdown tables that are incorrectly wrapped in fenced code blocks.
+ * LLMs sometimes wrap tables in ```...``` which prevents them from being rendered as GFM tables.
+ */
+function unwrapTablesFromCodeBlocks(src: string): string {
+  // Match fenced code blocks (``` or ~~~) without a language specifier or with empty language
+  // that contain what looks like a markdown table
+  return src.replace(
+    /(^|\n)(```|~~~)\s*\n([\s\S]*?)\n\2(\n|$)/g,
+    (match, prefix, fence, content, suffix) => {
+      // Check if the content is a markdown table
+      if (isMarkdownTableContent(content)) {
+        // Unwrap the table - return it without the code fences
+        // Add blank lines around it to ensure proper GFM parsing
+        return `${prefix}\n${content.trim()}\n${suffix}`;
+      }
+      // Not a table, keep the code block as-is
+      return match;
+    }
+  );
+}
+
+/**
  * Utility: mask segments that must be preserved verbatim (fenced & inline code, math blocks).
  */
 function maskCodeSegments(src: string) {
@@ -153,9 +205,13 @@ export const preprocessMarkdown = (content: string): string => {
   try {
     // Normalize line endings
     let processed = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-    
-    // 0) Mask code blocks/inline code and display math FIRST so we never touch them during preprocessing
-    //    This is critical for preserving $ symbols in Mermaid and other code blocks
+
+    // 0a) Unwrap markdown tables that are incorrectly wrapped in code blocks
+    //     LLMs sometimes wrap tables in ``` which prevents GFM table rendering
+    processed = unwrapTablesFromCodeBlocks(processed);
+
+    // 0b) Mask code blocks/inline code and display math FIRST so we never touch them during preprocessing
+    //     This is critical for preserving $ symbols in Mermaid and other code blocks
     const { masked, masks } = maskCodeSegments(processed);
     processed = masked;
     
