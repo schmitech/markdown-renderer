@@ -1050,7 +1050,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
         <h4
           style={{
             textAlign: 'center',
-            marginBottom: config.description ? '4px' : '12px',
+            marginBottom: config.description ? '4px' : (config.type === 'pie' ? '20px' : '12px'),
             marginTop: 0,
             color: textColor,
             fontWeight: 600,
@@ -1337,8 +1337,8 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               dataKey={config.dataKeys?.[0] || 'value'}
               nameKey={config.xKey || 'name'}
               cx="50%"
-              cy="50%"
-              outerRadius={height / 3}
+              cy="45%"
+              outerRadius={height / 3.2}
               label={{ fill: textColor }}
             >
               {config.data.map((_: unknown, index: number) => (
