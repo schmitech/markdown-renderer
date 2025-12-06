@@ -804,6 +804,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
   const colors = config.colors && config.colors.length ? config.colors : DEFAULT_COLORS;
   const height = config.height || 320;
   const derivedSeries = buildSeries(config, colors);
+
   const hasRightAxis = derivedSeries.some((series) => series.yAxisId === 'right');
   const showLegend = config.showLegend ?? (config.type === 'pie' || derivedSeries.length > 1);
   const showGrid = config.showGrid ?? true;
@@ -897,9 +898,10 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
     ? Math.min(Math.max(estimatedTickLabelHeight + 16, 80), 160)
     : Math.max(estimatedTickLabelHeight + 12, 36);
 
+  // Note: Don't set scale: 'band' explicitly - Recharts handles this automatically
+  // for bar charts, and setting it can interfere with rendering in some cases
   const categoricalXAxisProps = {
     type: 'category' as const,
-    scale: 'band' as const,
     interval: labelInterval as number,
     allowDuplicatedCategory: false,
     padding: { left: 16, right: 16 },
@@ -987,17 +989,16 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
 
   const xAxisHasLabel = Boolean(config.xAxisLabel);
 
-  // Simplified bottom margin calculation
-  const baseBottomMargin = 5;
-  const tickLabelSpace = shouldRotateLabels ? Math.min(estimatedTickLabelHeight, 80) : 20;
-  const axisLabelSpace = xAxisHasLabel ? 24 : 0;
-  const legendSpace = showLegend ? 30 : 0;
-  // Extra space when both axis label and legend need to be pushed down due to rotated labels
-  const rotatedLabelExtra = shouldRotateLabels && (xAxisHasLabel || showLegend)
-    ? Math.max(estimatedTickLabelHeight - 30, 0)
+  // Keep margins modest so the plotting area stays visible even with rotated labels
+  const baseBottomMargin = 16;
+  const axisLabelSpace = xAxisHasLabel ? 28 : 10;
+  const legendSpace = showLegend ? 26 : 6;
+  const rotatedPadding = shouldRotateLabels
+    ? Math.min(Math.max(estimatedTickLabelHeight - 48, 0), 28)
     : 0;
-
-  const bottomMargin = baseBottomMargin + tickLabelSpace + axisLabelSpace + legendSpace + rotatedLabelExtra;
+  // Extra space when both rotated labels and axis label are present to prevent overlap
+  const rotatedWithLabelExtra = shouldRotateLabels && xAxisHasLabel ? 16 : 0;
+  const bottomMargin = baseBottomMargin + axisLabelSpace + legendSpace + rotatedPadding + rotatedWithLabelExtra;
 
   const chartMargin = {
     left: leftAxisLabelText ? 80 : 10,
@@ -1007,8 +1008,9 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
   };
 
   // Calculate offset based on rotated label height to prevent overlap
-  const rotatedLabelOffset = shouldRotateLabels ? Math.max(estimatedTickLabelHeight - 30, 0) : 0;
-  const xAxisLabelOffset = rotatedLabelOffset;
+  const xAxisLabelOffset = shouldRotateLabels
+    ? Math.min(Math.max(estimatedTickLabelHeight - 60, 0), 36)
+    : 0;
   const xAxisLabel = xAxisHasLabel
     ? {
         value: config.xAxisLabel,
@@ -1017,9 +1019,19 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
       }
     : undefined;
 
-  const legendWrapperStyle = {
+  // When labels are long and rotated, they squeeze the legend horizontally
+  // Use vertical layout for legend in those cases
+  const useLegendVerticalLayout = shouldRotateLabels && labelAnalysis.avgLength > 20;
+
+  const legendWrapperStyle: React.CSSProperties = {
     color: textColor,
-    paddingTop: (xAxisHasLabel ? 24 : 0) + rotatedLabelOffset,
+    marginTop: xAxisHasLabel ? 16 + xAxisLabelOffset : 12,
+    paddingTop: shouldRotateLabels ? Math.min(Math.max(estimatedTickLabelHeight - 50, 8), 30) : 8,
+    display: 'flex',
+    justifyContent: 'center',
+    gap: useLegendVerticalLayout ? '8px' : '16px',
+    flexDirection: useLegendVerticalLayout ? 'column' : 'row',
+    alignItems: useLegendVerticalLayout ? 'center' : undefined,
   };
 
   return (
@@ -1129,7 +1141,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               labelFormatter={tooltipLabelFormatter}
               cursor={tooltipCursor}
             />
-            {showLegend && <Legend wrapperStyle={legendWrapperStyle} />}
+            {showLegend && <Legend wrapperStyle={legendWrapperStyle} iconSize={10} iconType="square" />}
             {referenceLineElements}
             {derivedSeries.map((series) => (
               <Bar
@@ -1182,7 +1194,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               labelFormatter={tooltipLabelFormatter}
               cursor={tooltipCursor}
             />
-            {showLegend && <Legend wrapperStyle={legendWrapperStyle} />}
+            {showLegend && <Legend wrapperStyle={legendWrapperStyle} iconSize={10} iconType="square" />}
             {referenceLineElements}
             {derivedSeries.map((series) => (
               <Line
@@ -1236,7 +1248,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               labelFormatter={tooltipLabelFormatter}
               cursor={tooltipCursor}
             />
-            {showLegend && <Legend wrapperStyle={legendWrapperStyle} />}
+            {showLegend && <Legend wrapperStyle={legendWrapperStyle} iconSize={10} iconType="square" />}
             {referenceLineElements}
             {derivedSeries.map((series) => (
               <Area
@@ -1291,7 +1303,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               labelFormatter={tooltipLabelFormatter}
               cursor={tooltipCursor}
             />
-            {showLegend && <Legend wrapperStyle={legendWrapperStyle} />}
+            {showLegend && <Legend wrapperStyle={legendWrapperStyle} iconSize={10} iconType="square" />}
             {referenceLineElements}
             {derivedSeries.map((series) => {
               switch (series.type) {
@@ -1369,7 +1381,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               itemStyle={tooltipItemStyle}
               formatter={tooltipFormatter}
             />
-            {showLegend && <Legend wrapperStyle={legendWrapperStyle} />}
+            {showLegend && <Legend wrapperStyle={legendWrapperStyle} iconSize={10} iconType="square" />}
           </PieChart>
         )}
 
@@ -1399,7 +1411,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
               labelFormatter={tooltipLabelFormatter}
               cursor={tooltipCursor}
             />
-            {showLegend && <Legend wrapperStyle={legendWrapperStyle} />}
+            {showLegend && <Legend wrapperStyle={legendWrapperStyle} iconSize={10} iconType="square" />}
             {referenceLineElements}
             <Scatter name="Data" data={config.data} fill={colors[0]} />
           </ScatterChart>
