@@ -37,7 +37,7 @@ function unwrapTablesFromCodeBlocks(src: string): string {
   // that contain what looks like a markdown table
   return src.replace(
     /(^|\n)(```|~~~)\s*\n([\s\S]*?)\n\2(\n|$)/g,
-    (match, prefix, fence, content, suffix) => {
+    (match, prefix, _fence, content, suffix) => {
       // Check if the content is a markdown table
       if (isMarkdownTableContent(content)) {
         // Unwrap the table - return it without the code fences
