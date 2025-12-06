@@ -1,8 +1,12 @@
 // Main entry point for the markdown-renderer package
 import rawStyles from './MarkdownStyles.css?inline';
 import './MarkdownStyles.css';
+import 'katex/dist/katex.min.css';
+import katexRawStyles from 'katex/dist/katex.min.css?inline';
 
 const STYLE_TAG_ID = 'schmitech-markdown-renderer-styles';
+
+const combinedStyles = `${katexRawStyles}\n${rawStyles}`;
 
 const ensureStylesInjected = () => {
   if (typeof document === 'undefined') return;
@@ -10,7 +14,7 @@ const ensureStylesInjected = () => {
 
   const styleTag = document.createElement('style');
   styleTag.id = STYLE_TAG_ID;
-  styleTag.textContent = rawStyles;
+  styleTag.textContent = combinedStyles;
   document.head.appendChild(styleTag);
 };
 
