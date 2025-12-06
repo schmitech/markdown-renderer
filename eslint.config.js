@@ -18,18 +18,28 @@ export default [
         }
       },
       globals: {
+        // Browser globals
         window: 'readonly',
         document: 'readonly',
         console: 'readonly',
+        navigator: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        MutationObserver: 'readonly',
+        DOMParser: 'readonly',
+        HTMLAnchorElement: 'readonly',
+        HTMLElement: 'readonly',
+        HTMLDivElement: 'readonly',
+        Element: 'readonly',
+        Node: 'readonly',
+        React: 'readonly',
+        // Node globals
         process: 'readonly',
         Buffer: 'readonly',
         __dirname: 'readonly',
-        __filename: 'readonly',
-        HTMLAnchorElement: 'readonly',
-        HTMLElement: 'readonly',
-        Element: 'readonly',
-        Node: 'readonly',
-        React: 'readonly'
+        __filename: 'readonly'
       }
     },
     plugins: {

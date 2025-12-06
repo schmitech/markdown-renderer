@@ -120,11 +120,11 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         return false;
       });
 
-      const mdastHasBlock = node?.children?.some((child: any) => {
+      const mdastHasBlock = node?.children?.some((child: { type: string; tagName?: string; properties?: { className?: string[] } }) => {
         if (child.type === 'code') return true; // fenced code blocks
 
         if (child.type === 'element') {
-          if (BLOCK_LEVEL_TAGS.has(child.tagName)) return true;
+          if (child.tagName && BLOCK_LEVEL_TAGS.has(child.tagName)) return true;
 
           if (child.tagName === 'code') {
             const className = child.properties?.className;

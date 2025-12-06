@@ -92,7 +92,7 @@ struct Person: Identifiable {
 }
 
 let team = [Person(name: "Ada"), Person(name: "Grace")]
-print(team.map(\.name).joined(separator: ", "))
+print(team.map(\\.name).joined(separator: ", "))
 \`\`\`
 
 ### C#
@@ -305,7 +305,7 @@ struct Report {
 }
 \`\`\`
 `,
-    preview: `struct Report {\n    let name: String\n    var pages: Int\n\n    var summary: String {\n        \"\\(name) contains \\(pages) pages\"\n    }\n}`,
+    preview: `struct Report {\n    let name: String\n    var pages: Int\n\n    var summary: String {\n        "\\(name) contains \\(pages) pages"\n    }\n}`,
   },
   {
     language: 'C#',
@@ -373,7 +373,7 @@ while read -r line; do
 done < input.txt
 \`\`\`
 `,
-    preview: `set -euo pipefail\n\nwhile read -r line; do\n  [[ -z \"$line\" ]] && continue`,
+    preview: `set -euo pipefail\n\nwhile read -r line; do\n  [[ -z "$line" ]] && continue`,
   },
   {
     language: 'JSON',

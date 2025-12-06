@@ -65,11 +65,14 @@ export interface ChartReferenceLineConfig {
 /**
  * Chart configuration interface
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ChartDataItem = Record<string, any>;
+
 export interface ChartConfig {
   type: 'bar' | 'line' | 'pie' | 'area' | 'scatter' | 'composed';
   title?: string;
   description?: string;
-  data: any[];
+  data: ChartDataItem[];
   dataKeys?: string[];
   xKey?: string;
   xAxisType?: 'category' | 'number';

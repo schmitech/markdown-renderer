@@ -272,7 +272,7 @@ export const parseChartConfig = (code: string, language: string): ChartConfig | 
       const isSeparatorLine = (line: string) => {
         const trimmed = line.trim();
         if (!trimmed.includes('|')) return false;
-        const withoutPipesAndSpaces = trimmed.replace(/[\|\s]/g, '');
+        const withoutPipesAndSpaces = trimmed.replace(/[|\s]/g, '');
         const dashCount = (withoutPipesAndSpaces.match(/-/g) || []).length;
         return dashCount > 0 && dashCount >= withoutPipesAndSpaces.length * 0.5;
       };
@@ -340,9 +340,11 @@ export const parseChartConfig = (code: string, language: string): ChartConfig | 
       }
 
       if (Array.isArray(config.data) && typeof config.data[0] === 'number') {
+        // Handle array of numbers - convert to objects with name/value pairs
+        const numericData = config.data as unknown as number[];
         const labels =
-          config.labels || config.data.map((_: number, idx: number) => `Item ${idx + 1}`);
-        config.data = (config.data as number[]).map((value: number, idx: number) => ({
+          config.labels || numericData.map((_, idx) => `Item ${idx + 1}`);
+        config.data = numericData.map((value, idx) => ({
           name: labels[idx],
           value,
         }));
@@ -546,7 +548,7 @@ const isLikelyIncomplete = (code: string): boolean => {
       const trimmed = line.trim();
       if (!trimmed.includes('|')) return false;
       // Count dashes vs other chars (excluding pipes and spaces)
-      const withoutPipesAndSpaces = trimmed.replace(/[\|\s]/g, '');
+      const withoutPipesAndSpaces = trimmed.replace(/[|\s]/g, '');
       const dashCount = (withoutPipesAndSpaces.match(/-/g) || []).length;
       // If more than 50% are dashes (and has some dashes), it's likely a separator
       return dashCount > 0 && dashCount >= withoutPipesAndSpaces.length * 0.5;

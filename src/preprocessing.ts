@@ -14,7 +14,7 @@ function isMarkdownTableContent(content: string): boolean {
 
   // Check if second line is a separator row (contains |, -, and optionally :)
   const secondLine = lines[1].trim();
-  if (!secondLine.startsWith('|') || !/^[\s|:\-]+$/.test(secondLine) || !secondLine.includes('-')) {
+  if (!secondLine.startsWith('|') || !/^[\s|:|-]+$/.test(secondLine) || !secondLine.includes('-')) {
     return false;
   }
 
