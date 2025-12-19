@@ -187,6 +187,62 @@ function normalizeInlineTables(src: string) {
   return result.join('\n');
 }
 
+const LATEX_ENVIRONMENTS = [
+  'aligned',
+  'align',
+  'align*',
+  'array',
+  'cases',
+  'pmatrix',
+  'bmatrix',
+  'vmatrix',
+  'Vmatrix',
+  'matrix',
+  'smallmatrix',
+  'gather',
+  'gather*',
+  'multline',
+  'multline*',
+  'split',
+  'flalign',
+  'flalign*',
+  'eqnarray',
+  'equation',
+  'equation*',
+];
+
+function createMaskPlaceholder(masks: Record<string, string>, prefix: string): string {
+  let index = 0;
+  let key = `__${prefix}_${index}__`;
+  while (Object.prototype.hasOwnProperty.call(masks, key)) {
+    index++;
+    key = `__${prefix}_${index}__`;
+  }
+  return key;
+}
+
+function wrapLatexEnvironments(src: string, masks: Record<string, string>) {
+  if (!LATEX_ENVIRONMENTS.length) return src;
+  const envPattern = LATEX_ENVIRONMENTS.join('|');
+  const regex = new RegExp(String.raw`\\begin\{(${envPattern})\}([\s\S]*?)\\end\{\1\}`, 'g');
+
+  return src.replace(regex, (match, _env, _body, offset, source) => {
+    const before = source.slice(0, offset);
+    const after = source.slice(offset + match.length);
+    const hasDisplayStart = /(\$\$|\\\[)\s*$/.test(before);
+    const hasDisplayEnd = /^\s*(\$\$|\\\])/.test(after);
+
+    if (hasDisplayStart && hasDisplayEnd) {
+      return match;
+    }
+
+    const placeholder = createMaskPlaceholder(masks, 'LATEX_ENV');
+    const block = match.trim();
+    masks[placeholder] = `\n$$\n${block}\n$$\n`;
+    return placeholder;
+  });
+}
+
 function unmaskCodeSegments(src: string, masks: Record<string, string>) {
   for (const [k, v] of Object.entries(masks)) {
     const pattern = new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
@@ -221,6 +277,10 @@ export const preprocessMarkdown = (content: string): string => {
     // LLMs sometimes keep the first table row on the same line as preceding text (e.g. "Table: | Col |")
     // ReactMarkdown expects the table to start on a fresh line, so split those constructs.
     processed = normalizeInlineTables(processed);
+    
+    // Wrap standalone LaTeX environments (aligned, cases, matrices, etc.) in display math fences
+    // so KaTeX can parse them reliably, but skip anything that's already wrapped.
+    processed = wrapLatexEnvironments(processed, masks);
     
     // 0.5) Process currency BEFORE masking inline math to avoid conflicts
     //      Temporarily replace currency with placeholders

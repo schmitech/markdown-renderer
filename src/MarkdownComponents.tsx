@@ -5,8 +5,8 @@ import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import type { PluggableList } from 'unified';
 import 'katex/dist/katex.min.css';
-// Load mhchem for chemistry support
-import 'katex/dist/contrib/mhchem.js';
+// Load mhchem for chemistry support (ESM build so it patches the same KaTeX instance)
+import 'katex/contrib/mhchem';
 
 import { preprocessMarkdown, containsMathNotation } from './preprocessing';
 import { CodeBlock } from './CodeBlock';

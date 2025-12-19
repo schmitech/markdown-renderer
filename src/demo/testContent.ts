@@ -46,6 +46,35 @@ $$
 
 This snippet covers several inline variables like $a$, $b$, and $f$ that must remain math to avoid regressions.`;
 
+export const sphereSurfaceContent = `## Surface Equation (3D)
+
+A sphere centered at the origin:
+
+$x^2 + y^2 + z^2 = R^2$
+
+### Parameterization (latitude/longitude)
+Using latitude $\\phi$ and longitude $\\lambda$:
+
+\\begin{aligned}
+x &= R\\cos\\phi \\cos\\lambda \\\\
+y &= R\\cos\\phi \\sin\\lambda \\\\
+z &= R\\sin\\phi
+\\end{aligned}
+
+### Curvature (how "bent" it is)
+For a sphere, the (principal) curvatures are constant:
+
+$k_1 = k_2 = \\frac{1}{R}$
+
+### Surface drop approximation
+If you travel a distance $s$ along Earth's surface (an arc), the central angle is:
+
+$\\theta = \\frac{s}{R}$
+
+If you stand on a tangent line and look at how much the surface falls away over ground distance $s$, a common approximation is:
+
+$\\text{drop} \\approx \\frac{s^2}{2R}$`;
+
 export const languageShowcaseContent = `# Programming Language Showcase
 
 Quick references for a variety of syntaxes so syntax highlighting and code block rendering can be validated across ecosystems.
@@ -695,6 +724,10 @@ $\\lim_{x \\to \\infty} \\frac{1}{x} = 0$`
   {
     title: 'Ellipsoid Flattening Math',
     content: ellipsoidFlatteningContent,
+  },
+  {
+    title: 'Sphere Surface Math',
+    content: sphereSurfaceContent,
   },
   {
     title: 'Chemistry Notation',
