@@ -257,8 +257,7 @@ function wrapLatexEnvironments(src: string, masks: Record<string, string>) {
     // Find matching $$ pairs before our position
     const displayMathPattern = /\$\$/g;
     let displayCount = 0;
-    let m;
-    while ((m = displayMathPattern.exec(before)) !== null) {
+    while (displayMathPattern.exec(before) !== null) {
       displayCount++;
     }
     const isInsideDisplayMath = displayCount % 2 === 1;
