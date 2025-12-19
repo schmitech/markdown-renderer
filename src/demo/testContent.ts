@@ -730,6 +730,105 @@ $\\lim_{x \\to \\infty} \\frac{1}{x} = 0$`
     content: sphereSurfaceContent,
   },
   {
+    title: 'Matrix & Vector Math',
+    content: `## Matrix and Vector Notation
+
+### Position Vector with Matrix
+
+Let the Galactic Center be the origin, and assume the Sun moves in a circle of radius $R_0$ with constant angular speed $\\Omega$.
+
+$$
+\\vec{r}_{\\odot}(t) = \\begin{pmatrix} R_0\\cos(\\Omega t+\\phi_0)\\\\ R_0\\sin(\\Omega t+\\phi_0)\\\\ 0 \\end{pmatrix}
+$$
+
+### Inline Matrix Expression
+
+The position vector $\\vec{r}_{\\odot}(t) = \\begin{pmatrix} x \\\\ y \\\\ z \\end{pmatrix}$ describes a circular orbit.
+
+### Rotation Matrix
+
+A 2D rotation by angle $\\theta$:
+
+$$
+R(\\theta) = \\begin{pmatrix} \\cos\\theta & -\\sin\\theta \\\\ \\sin\\theta & \\cos\\theta \\end{pmatrix}
+$$
+
+### Transformation with Brackets
+
+Using bracket matrix notation:
+
+$$
+\\begin{bmatrix} x' \\\\ y' \\end{bmatrix} = \\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix} \\begin{bmatrix} x \\\\ y \\end{bmatrix}
+$$
+
+### System of Equations (Cases)
+
+The piecewise function:
+
+$$
+f(x) = \\begin{cases} x^2 & \\text{if } x \\geq 0 \\\\ -x^2 & \\text{if } x < 0 \\end{cases}
+$$
+
+### Determinant
+
+The determinant of a 3×3 matrix:
+
+$$
+\\det(A) = \\begin{vmatrix} a_{11} & a_{12} & a_{13} \\\\ a_{21} & a_{22} & a_{23} \\\\ a_{31} & a_{32} & a_{33} \\end{vmatrix}
+$$
+
+### Standalone Environment (No Delimiters)
+
+This should auto-wrap in display math:
+
+\\begin{aligned}
+\\vec{F} &= m\\vec{a} \\\\
+\\vec{p} &= m\\vec{v} \\\\
+E &= \\frac{1}{2}mv^2
+\\end{aligned}
+
+### Edge Case: Bracket Delimiters with Content
+
+Using backslash-bracket notation with expressions before the matrix:
+
+\\[
+\\vec{v} = \\begin{pmatrix} v_x \\\\ v_y \\\\ v_z \\end{pmatrix}
+\\]
+
+### Edge Case: Matrix in Display Math with Prefix
+
+$$
+A^{-1} = \\frac{1}{\\det(A)} \\begin{bmatrix} d & -b \\\\ -c & a \\end{bmatrix}
+$$
+
+### Edge Case: Multiple Matrices in One Expression
+
+$$
+\\begin{pmatrix} x' \\\\ y' \\end{pmatrix} = \\begin{pmatrix} \\cos\\theta & -\\sin\\theta \\\\ \\sin\\theta & \\cos\\theta \\end{pmatrix} \\begin{pmatrix} x \\\\ y \\end{pmatrix} + \\begin{pmatrix} t_x \\\\ t_y \\end{pmatrix}
+$$
+
+### Edge Case: Nested Environments
+
+$$
+\\begin{cases}
+\\vec{F} = m\\vec{a} & \\text{Newton's 2nd Law} \\\\
+\\begin{aligned}
+F_x &= ma_x \\\\
+F_y &= ma_y
+\\end{aligned} & \\text{Component form}
+\\end{cases}
+$$
+
+### Edge Case: Small Inline Matrix
+
+The identity matrix $I = \\begin{pmatrix} 1 & 0 \\\\ 0 & 1 \\end{pmatrix}$ is fundamental.
+
+### Edge Case: Currency Near Math
+
+The matrix operation costs \\$500 to compute: $\\begin{pmatrix} a & b \\end{pmatrix}$.
+`
+  },
+  {
     title: 'Chemistry Notation',
     content: `## Chemistry Examples
 

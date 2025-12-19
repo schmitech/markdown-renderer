@@ -229,11 +229,64 @@ function wrapLatexEnvironments(src: string, masks: Record<string, string>) {
   return src.replace(regex, (match, _env, _body, offset, source) => {
     const before = source.slice(0, offset);
     const after = source.slice(offset + match.length);
+
+    // Check if already wrapped in display math ($$ or \[...\])
+    // Case 1: $$ or \[ immediately before (with optional whitespace)
     const hasDisplayStart = /(\$\$|\\\[)\s*$/.test(before);
     const hasDisplayEnd = /^\s*(\$\$|\\\])/.test(after);
 
     if (hasDisplayStart && hasDisplayEnd) {
       return match;
+    }
+
+    // Case 2: Check if we're anywhere inside \[...\] block
+    // Find the last \[ and \] before our position
+    const lastOpenBracket = before.lastIndexOf('\\[');
+    const lastCloseBracket = before.lastIndexOf('\\]');
+    const isInsideBracketMath = lastOpenBracket > lastCloseBracket && lastOpenBracket !== -1;
+
+    if (isInsideBracketMath) {
+      // Verify there's a closing \] after the environment
+      const hasClosingBracket = /\\]/.test(after);
+      if (hasClosingBracket) {
+        return match;
+      }
+    }
+
+    // Case 3: Check if inside display math $$...$$ that wasn't at boundary
+    // Find matching $$ pairs before our position
+    const displayMathPattern = /\$\$/g;
+    let displayCount = 0;
+    let m;
+    while ((m = displayMathPattern.exec(before)) !== null) {
+      displayCount++;
+    }
+    const isInsideDisplayMath = displayCount % 2 === 1;
+
+    if (isInsideDisplayMath) {
+      const hasClosingDisplay = /\$\$/.test(after);
+      if (hasClosingDisplay) {
+        return match;
+      }
+    }
+
+    // Case 4: Check if inside inline math ($...$)
+    // Remove $$ first to avoid double-counting, then count single $
+    const beforeWithoutDisplay = before.replace(/\$\$/g, '__DD__');
+    // Also remove escaped \$ signs
+    const beforeClean = beforeWithoutDisplay.replace(/\\\$/g, '__ES__');
+    // Count unescaped single $ signs
+    const dollarMatches = beforeClean.match(/\$/g) || [];
+    const isInsideInlineMath = dollarMatches.length % 2 === 1;
+
+    if (isInsideInlineMath) {
+      const afterWithoutDisplay = after.replace(/\$\$/g, '__DD__');
+      const afterClean = afterWithoutDisplay.replace(/\\\$/g, '__ES__');
+      const hasClosingDollar = /^[^$]*\$(?!\$)/.test(afterClean);
+      if (hasClosingDollar) {
+        // Already inside inline math - leave it alone for KaTeX to handle
+        return match;
+      }
     }
 
     const placeholder = createMaskPlaceholder(masks, 'LATEX_ENV');
