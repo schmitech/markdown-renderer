@@ -829,6 +829,29 @@ The matrix operation costs \\$500 to compute: $\\begin{pmatrix} a & b \\end{pmat
 `
   },
   {
+    title: 'Undo Button Antiderivatives',
+    content: `## Antiderivative Walkthrough
+
+4) The "undo button" idea: antiderivatives
+
+An indefinite integral
+
+$\\int f(x)\\,dx$
+means: "Find a function whose derivative is $f(x)$."
+
+If $F'(x) = f(x)$, then
+
+$\\int f(x)\\,dx = F(x) + C$
+
+Compute:
+
+$\\int 2x\\,dx$
+
+Step 1: Find the antiderivative
+
+$\\int 2x\\,dx = x^2 + C$`
+  },
+  {
     title: 'Chemistry Notation',
     content: `## Chemistry Examples
 

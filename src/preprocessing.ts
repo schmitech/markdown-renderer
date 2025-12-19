@@ -476,12 +476,13 @@ export const preprocessMarkdown = (content: string): string => {
       })
       .join('\n');
 
-    // 3) Restore currency placeholders BUT escape the leading '$' so remark-math won't pair them
-    //    This is the key to allowing $…$ math while keeping $ amounts literal.
+    // 3) Restore currency placeholders but convert '$' into HTML entities so remark-math never
+    //    interprets them as inline math delimiters. Strip any escaping slashes that users provided.
     currencyMap.forEach((original, ph) => {
-      const escaped = original.replace(/\$/g, '\\$');
-      processed = processed.replace(new RegExp(ph.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), escaped);
+      const entitySafe = original.replace(/\$/g, '&#36;');
+      processed = processed.replace(new RegExp(ph.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), entitySafe);
     });
+    processed = processed.replace(/\\&#36;/g, '&#36;');
 
     // 5) Unmask code segments
     processed = unmaskCodeSegments(processed, masks);
