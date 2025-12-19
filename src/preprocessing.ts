@@ -100,8 +100,16 @@ function maskInlineMath(src: string) {
     const looksLikeCurrency = /^-?\d{1,3}(?:,\d{3})*(?:\.\d+)?(?:\s?[KMBkmb]|[Kk]ilo|[Mm]illion|[Bb]illion)?$/.test(trimmed);
     if (looksLikeCurrency) return _m;
     
+    // Fix: Double-escape backslashes followed by punctuation to prevent Markdown from consuming them
+    // e.g. \, -> \\,  and \{ -> \\{
+    // We protect any backslash that isn't followed by a letter or digit
+    const fixedBody = body.replace(/\\([^A-Za-z0-9])/g, (_match: string, char: string) => {
+      if (char === '\\') return '\\\\\\\\';
+      return '\\\\' + char;
+    });
+
     const key = `__INLINE_MATH_${i++}__`;
-    masks[key] = `$${body}$`;
+    masks[key] = `$${fixedBody}$`;
     return key;
   });
 

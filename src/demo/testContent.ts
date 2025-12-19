@@ -2083,6 +2083,20 @@ Charts with many data points should:
 - ✅ All labels should be readable without overlapping
 - ✅ Tooltips should show FULL original labels even when axis labels are truncated
 - ✅ Short labels should NOT be truncated unnecessarily (smart truncation)`
+  },
+  {
+    title: 'Bug Reproduction',
+    content: `## Bug Reproduction
+
+Test cases for reported math rendering issues.
+
+1. Integral with thin space: $\\int 2x\\,dx$
+2. Integral equation: $\\int 2x\\,dx = x^2 + C$
+3. Function integral: $\\int f(x)\\,dx = F(x) + C$
+
+Raw source check (escaped for JS string):
+\`$\\int 2x\\,dx$\`
+`
   }
 ];
 
