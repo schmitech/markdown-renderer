@@ -21,6 +21,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import type { Formatter, NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import type {
   ChartConfig,
   ChartFormatterConfig,
@@ -942,11 +943,19 @@ export const ChartRenderer: React.FC<ChartRendererProps> = ({ code, language }) 
     fillOpacity: 0.3,
   };
 
-  const tooltipFormatter = (value: any, name: string) => {
+  const tooltipFormatter: Formatter<ValueType, NameType> = (value, name) => {
+    const safeName = (name ?? '') as NameType;
     if (typeof value === 'number') {
-      return [formatValue(value, config.formatter), name];
+      const formatted = formatValue(value, config.formatter);
+      return [String(formatted ?? value), safeName];
     }
-    return [value, name];
+    if (Array.isArray(value)) {
+      return [value.join(', '), safeName];
+    }
+    if (typeof value === 'string') {
+      return [value, safeName];
+    }
+    return ['', safeName];
   };
 
   const axisTickFormatter = (value: any) => {

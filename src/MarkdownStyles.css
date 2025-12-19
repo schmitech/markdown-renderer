@@ -137,14 +137,97 @@
 /* Links */
 .markdown-content a {
   color: var(--md-link-color);
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration: none;
   transition: color 0.2s;
-  overflow-wrap: anywhere; /* Ensure long URLs wrap instead of overflowing */
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
-.markdown-content a:hover {
+.markdown-content a:hover,
+.markdown-content a:focus-visible {
   color: var(--md-link-hover);
+  text-decoration: none;
+  outline: none;
+}
+
+.markdown-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 2px;
+  font-weight: 500;
+}
+
+.markdown-link--inline {
+  border-bottom: none;
+}
+
+.markdown-link--card {
+  display: flex;
+  width: 100%;
+  border: 1px solid var(--md-border-color);
+  border-radius: 10px;
+  background-color: var(--md-bg-secondary);
+  padding: 14px 16px;
+  margin: 12px 0;
+  gap: 12px;
+  color: var(--md-text-primary);
+  border-bottom: none;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.markdown-link--card:hover,
+.markdown-link--card:focus-visible {
+  border-color: var(--md-link-color);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+  transform: translateY(-2px);
+  color: var(--md-text-primary);
+}
+
+.markdown-link__content {
+  display: inline-flex;
+  gap: 0.3em;
+  align-items: center;
+}
+
+.markdown-link--card .markdown-link__content {
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.markdown-link__hostname {
+  font-weight: 600;
+  color: var(--md-text-primary);
+}
+
+.markdown-link__path {
+  font-size: 0.85em;
+  color: var(--md-text-secondary);
+  word-break: break-all;
+}
+
+.markdown-link__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--md-link-color);
+  flex-shrink: 0;
+}
+
+.markdown-link--card .markdown-link__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background-color: var(--md-bg-primary);
+  border: 1px solid var(--md-border-color);
+}
+
+.markdown-link--card .markdown-link__icon svg {
+  width: 14px;
+  height: 14px;
 }
 
 /* Lists */

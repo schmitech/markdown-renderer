@@ -17,13 +17,81 @@ import { BLOCK_LEVEL_TAGS, type MarkdownRendererProps } from './types';
  */
 export const MarkdownLink: React.FC<React.AnchorHTMLAttributes<HTMLAnchorElement>> = ({
   children,
-  href,
+  href = '',
+  className = '',
   ...props
-}) => (
-  <a {...props} href={href} target="_blank" rel="noopener noreferrer">
-    {children}
-  </a>
-);
+}) => {
+  const childText = React.Children.toArray(children)
+    .map((child) => (typeof child === 'string' ? child : ''))
+    .join('')
+    .trim();
+
+  const isHttpLink = /^https?:\/\//i.test(href);
+  const isBareUrl = Boolean(isHttpLink && childText && normalizeUrlText(childText) === normalizeUrlText(href));
+
+  const parsed = isHttpLink ? parseUrl(href) : null;
+  const showCardStyle = Boolean(isBareUrl && parsed);
+  const classes = ['markdown-link', showCardStyle ? 'markdown-link--card' : 'markdown-link--inline', className]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <a
+      {...props}
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={classes}
+    >
+      <span className="markdown-link__content">
+        {showCardStyle && parsed ? (
+          <>
+            <span className="markdown-link__hostname">{parsed.hostname}</span>
+            {parsed.path && parsed.path !== '/' && (
+              <span className="markdown-link__path">{parsed.path}</span>
+            )}
+          </>
+        ) : (
+          children
+        )}
+      </span>
+      {isHttpLink && (
+        <span className="markdown-link__icon" aria-hidden="true">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M8 16L16 8M16 8H9M16 8V15"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+      )}
+    </a>
+  );
+};
+
+function normalizeUrlText(value: string): string {
+  return value.trim().replace(/\/$/, '');
+}
+
+function parseUrl(raw: string) {
+  try {
+    const url = new URL(raw);
+    const hostname = url.hostname.replace(/^www\./i, '');
+    const path = `${url.pathname}${url.search}${url.hash}` || '/';
+    return { hostname, path };
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Enhanced Markdown renderer with robust currency and math handling

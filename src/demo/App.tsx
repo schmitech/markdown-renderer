@@ -432,6 +432,12 @@ Try:
                   is embedded in another application.
                 </p>
               )}
+              {!showStressTest && selectedTestCase?.title === 'Ellipsoid Flattening Math' && (
+                <p className="note">
+                  Validates inline math variables like $a$, $b$, and $f$ remain math expressions even
+                  when surrounded by prose, matching the regression report.
+                </p>
+              )}
               {showStressTest && (
                 <p className="warning">⚠️ This test contains a large amount of content to test performance</p>
               )}

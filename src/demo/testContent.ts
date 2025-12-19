@@ -27,6 +27,25 @@ These emojis came from an LLM answer that kept the table header on the same line
 
 The renderer should normalize the table onto its own line so ReactMarkdown can render it even when used inside another application.`;
 
+export const ellipsoidFlatteningContent = `## Ellipsoid Flattening Example
+
+In navigation we often approximate the Earth as an oblate spheroid where it’s treated like a circle of radius $b$. (More accurate ellipsoid formulas exist if you want them.)
+
+Using flattening $f$:
+
+$f = \\frac{a-b}{a} \\qquad\\Longrightarrow\\qquad b = a(1-f)$
+
+So the circumferences in terms of $a$ and $f$ are:
+
+$$
+\\begin{aligned}
+C_{\\text{equatorial}} &= 2\\pi a \\\\
+C_{\\text{polar}} &\\approx 2\\pi b = 2\\pi a(1-f)
+\\end{aligned}
+$$
+
+This snippet covers several inline variables like $a$, $b$, and $f$ that must remain math to avoid regressions.`;
+
 export const languageShowcaseContent = `# Programming Language Showcase
 
 Quick references for a variety of syntaxes so syntax highlighting and code block rendering can be validated across ecosystems.
@@ -672,6 +691,10 @@ $\\alpha, \\beta, \\gamma, \\delta, \\epsilon, \\theta, \\lambda, \\mu, \\pi, \\
 $\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}$
 
 $\\lim_{x \\to \\infty} \\frac{1}{x} = 0$`
+  },
+  {
+    title: 'Ellipsoid Flattening Math',
+    content: ellipsoidFlatteningContent,
   },
   {
     title: 'Chemistry Notation',

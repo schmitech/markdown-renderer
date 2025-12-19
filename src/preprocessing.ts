@@ -333,6 +333,7 @@ export const preprocessMarkdown = (content: string): string => {
         const hasLettersAndNumbers = /[a-zA-Z].*\d|\d.*[a-zA-Z]/.test(inner);
         const hasGreekLetters = /\\(?:alpha|beta|gamma|delta|epsilon|theta|lambda|mu|pi|sigma|omega)/.test(inner);
         const hasMathFunctions = /\\(?:frac|sqrt|sum|int|lim|log|ln|sin|cos|tan|exp)/.test(inner);
+        const isSingleLetterVariable = /^[A-Za-z]$/.test(inner.trim());
         
         // It's probably math if it has any math-like characteristics
         const isProbablyMath = !isLikelyCurrency && (
@@ -341,7 +342,8 @@ export const preprocessMarkdown = (content: string): string => {
           hasLettersAndNumbers || 
           hasGreekLetters || 
           hasMathFunctions ||
-          inner.length > 1 // Single characters are likely variables
+          isSingleLetterVariable ||
+          inner.length > 1 // Single characters are likely variables unless clearly non-math
         );
         
         if (isProbablyMath) return m;

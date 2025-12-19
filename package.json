@@ -34,11 +34,11 @@
     "abcjs": "^6.5.2",
     "ajv": "^8.17.1",
     "dompurify": "^3.0.8",
-    "katex": "^0.16.22",
+    "katex": "^0.16.27",
     "mermaid": "^11.12.1",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^15.5.0",
-    "recharts": "^3.5.1",
+    "recharts": "^3.6.0",
     "rehype-katex": "^7.0.1",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0"
