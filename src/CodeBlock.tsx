@@ -47,10 +47,11 @@ const detectTheme = (element: HTMLElement | null): ThemeMode => {
 };
 
 const useEffectiveTheme = (
-  ref: React.RefObject<HTMLElement>,
+  ref: React.RefObject<HTMLElement | null>,
   explicitTheme?: ThemeMode
 ): ThemeMode => {
   const [detectedTheme, setDetectedTheme] = useState<ThemeMode>('light');
+  const lastThemeRef = useRef<ThemeMode>('light');
 
   useEffect(() => {
     if (explicitTheme) {
@@ -62,7 +63,12 @@ const useEffectiveTheme = (
     }
 
     const updateTheme = () => {
-      setDetectedTheme(detectTheme(ref.current));
+      const newTheme = detectTheme(ref.current);
+      // Only update if theme actually changed to prevent re-render loops
+      if (newTheme !== lastThemeRef.current) {
+        lastThemeRef.current = newTheme;
+        setDetectedTheme(newTheme);
+      }
     };
 
     updateTheme();
@@ -70,13 +76,7 @@ const useEffectiveTheme = (
     const prefersDarkQuery = window.matchMedia?.('(prefers-color-scheme: dark)') ?? null;
     const handleMediaChange = () => updateTheme();
 
-    if (prefersDarkQuery) {
-      if (prefersDarkQuery.addEventListener) {
-        prefersDarkQuery.addEventListener('change', handleMediaChange);
-      } else if (prefersDarkQuery.addListener) {
-        prefersDarkQuery.addListener(handleMediaChange);
-      }
-    }
+    prefersDarkQuery?.addEventListener('change', handleMediaChange);
 
     const observer =
       typeof MutationObserver !== 'undefined'
@@ -101,16 +101,10 @@ const useEffectiveTheme = (
     }
 
     return () => {
-      if (prefersDarkQuery) {
-        if (prefersDarkQuery.removeEventListener) {
-          prefersDarkQuery.removeEventListener('change', handleMediaChange);
-        } else if (prefersDarkQuery.removeListener) {
-          prefersDarkQuery.removeListener(handleMediaChange);
-        }
-      }
+      prefersDarkQuery?.removeEventListener('change', handleMediaChange);
       observer?.disconnect();
     };
-  }, [explicitTheme, ref]);
+  }, [explicitTheme]); // Removed ref from deps - ref objects are stable
 
   return explicitTheme ?? detectedTheme;
 };

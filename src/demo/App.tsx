@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useReducer, useRef, useEffect, useCallback } from 'react';
 import { MarkdownRenderer } from '../MarkdownComponents';
 import '../MarkdownStyles.css';
 import testCases, {
@@ -14,26 +14,134 @@ import './App.css';
 
 type ThemeMode = 'system' | 'light' | 'dark';
 
+type ViewMode =
+  | 'testCase'
+  | 'custom'
+  | 'stressTest'
+  | 'integration'
+  | 'debug'
+  | 'streaming'
+  | 'multiChart';
+
+interface AppState {
+  viewMode: ViewMode;
+  selectedTest: number;
+  customContent: string;
+  disableMath: boolean;
+  showRawOutput: boolean;
+  streamingStage: number;
+  isStreaming: boolean;
+  themeMode: ThemeMode;
+  selectedSample: CodeSample | null;
+}
+
+type AppAction =
+  | { type: 'SELECT_TEST'; index: number }
+  | { type: 'SET_VIEW_MODE'; mode: ViewMode }
+  | { type: 'SET_CUSTOM_CONTENT'; content: string }
+  | { type: 'SET_DISABLE_MATH'; value: boolean }
+  | { type: 'SET_SHOW_RAW_OUTPUT'; value: boolean }
+  | { type: 'SET_STREAMING_STAGE'; stage: number }
+  | { type: 'SET_IS_STREAMING'; value: boolean }
+  | { type: 'SET_THEME_MODE'; mode: ThemeMode }
+  | { type: 'SELECT_SAMPLE'; sample: CodeSample }
+  | { type: 'CLEAR_SAMPLE' }
+  | { type: 'START_STREAMING' }
+  | { type: 'STOP_STREAMING' };
+
+const initialState: AppState = {
+  viewMode: 'testCase',
+  selectedTest: 0,
+  customContent: '',
+  disableMath: false,
+  showRawOutput: false,
+  streamingStage: 0,
+  isStreaming: false,
+  themeMode: 'system',
+  selectedSample: null,
+};
+
+function appReducer(state: AppState, action: AppAction): AppState {
+  switch (action.type) {
+    case 'SELECT_TEST':
+      return {
+        ...state,
+        viewMode: 'testCase',
+        selectedTest: action.index,
+        selectedSample: null,
+      };
+    case 'SET_VIEW_MODE':
+      return {
+        ...state,
+        viewMode: action.mode,
+        selectedSample: null,
+        // Reset streaming stage when entering streaming mode
+        streamingStage: action.mode === 'streaming' ? 0 : state.streamingStage,
+      };
+    case 'SET_CUSTOM_CONTENT':
+      return {
+        ...state,
+        customContent: action.content,
+        selectedSample: null,
+      };
+    case 'SET_DISABLE_MATH':
+      return { ...state, disableMath: action.value };
+    case 'SET_SHOW_RAW_OUTPUT':
+      return { ...state, showRawOutput: action.value };
+    case 'SET_STREAMING_STAGE':
+      return { ...state, streamingStage: action.stage };
+    case 'SET_IS_STREAMING':
+      return { ...state, isStreaming: action.value };
+    case 'SET_THEME_MODE':
+      return { ...state, themeMode: action.mode };
+    case 'SELECT_SAMPLE':
+      return {
+        ...state,
+        viewMode: 'custom',
+        customContent: action.sample.markdown,
+        selectedSample: action.sample,
+      };
+    case 'CLEAR_SAMPLE':
+      return { ...state, selectedSample: null };
+    case 'START_STREAMING':
+      return { ...state, streamingStage: 0, isStreaming: true };
+    case 'STOP_STREAMING':
+      return { ...state, isStreaming: false };
+    default:
+      return state;
+  }
+}
+
 const inlineTableTestIndex = testCases.findIndex(
   (test) => test.title === 'LLM Inline Table Response'
 );
 
 function App() {
-  const [selectedTest, setSelectedTest] = useState(0);
-  const [customContent, setCustomContent] = useState('');
-  const [useCustom, setUseCustom] = useState(false);
-  const [disableMath, setDisableMath] = useState(false);
-  const [showStressTest, setShowStressTest] = useState(false);
-  const [showRawOutput, setShowRawOutput] = useState(false);
-  const [showIntegration, setShowIntegration] = useState(false);
-  const [showDebug, setShowDebug] = useState(false);
-  const [showStreamingTest, setShowStreamingTest] = useState(false);
-  const [streamingStage, setStreamingStage] = useState(0);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [showMultiChart, setShowMultiChart] = useState(false);
-  const [themeMode, setThemeMode] = useState<ThemeMode>('system');
-  const [selectedSample, setSelectedSample] = useState<CodeSample | null>(null);
+  const [state, dispatch] = useReducer(appReducer, initialState);
+  const streamingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const {
+    viewMode,
+    selectedTest,
+    customContent,
+    disableMath,
+    showRawOutput,
+    streamingStage,
+    isStreaming,
+    themeMode,
+    selectedSample,
+  } = state;
+
   const selectedTestCase = testCases[selectedTest];
+
+  // Cleanup streaming interval on unmount
+  useEffect(() => {
+    return () => {
+      if (streamingIntervalRef.current) {
+        clearInterval(streamingIntervalRef.current);
+      }
+    };
+  }, []);
 
   // Determine the effective theme class for the markdown content
   const getThemeClass = (): string => {
@@ -42,63 +150,48 @@ function App() {
     return ''; // system preference - no class, CSS handles it
   };
 
-  const clearSampleSelection = () => {
-    if (selectedSample) {
-      setSelectedSample(null);
-    }
-  };
-
-  const activateCustomMode = (content: string, sample?: CodeSample | null) => {
-    setUseCustom(true);
-    setShowStressTest(false);
-    setShowIntegration(false);
-    setShowDebug(false);
-    setShowStreamingTest(false);
-    setShowMultiChart(false);
-    setCustomContent(content);
-    if (sample) {
-      setSelectedSample(sample);
-    } else {
-      setSelectedSample(null);
-    }
-  };
-
-  const handleCodeSampleSelect = (sample: CodeSample) => {
-    activateCustomMode(sample.markdown, sample);
-  };
-
-  const currentContent = showStreamingTest
-    ? streamingChartStages.stages[streamingStage]
-    : showMultiChart
-      ? multiChartStreamingContent
-      : showStressTest
-        ? stressTestContent
-        : useCustom
-          ? customContent
-          : testCases[selectedTest].content;
+  const currentContent =
+    viewMode === 'streaming'
+      ? streamingChartStages.stages[streamingStage]
+      : viewMode === 'multiChart'
+        ? multiChartStreamingContent
+        : viewMode === 'stressTest'
+          ? stressTestContent
+          : viewMode === 'custom'
+            ? customContent
+            : testCases[selectedTest].content;
 
   // Start streaming simulation
-  const startStreamingSimulation = () => {
-    setStreamingStage(0);
-    setIsStreaming(true);
+  const startStreamingSimulation = useCallback(() => {
+    dispatch({ type: 'START_STREAMING' });
 
     let stage = 0;
-    const interval = setInterval(() => {
+    streamingIntervalRef.current = setInterval(() => {
       stage++;
       if (stage >= streamingChartStages.stages.length) {
-        clearInterval(interval);
-        setIsStreaming(false);
+        if (streamingIntervalRef.current) {
+          clearInterval(streamingIntervalRef.current);
+          streamingIntervalRef.current = null;
+        }
+        dispatch({ type: 'STOP_STREAMING' });
       } else {
-        setStreamingStage(stage);
+        dispatch({ type: 'SET_STREAMING_STAGE', stage });
       }
-    }, 300); // Simulate ~300ms between chunks
-  };
+    }, 300);
+  }, []);
 
   // Reset to final complete state
-  const showCompleteChart = () => {
-    setStreamingStage(streamingChartStages.stages.length - 1);
-    setIsStreaming(false);
-  };
+  const showCompleteChart = useCallback(() => {
+    if (streamingIntervalRef.current) {
+      clearInterval(streamingIntervalRef.current);
+      streamingIntervalRef.current = null;
+    }
+    dispatch({ type: 'SET_STREAMING_STAGE', stage: streamingChartStages.stages.length - 1 });
+    dispatch({ type: 'STOP_STREAMING' });
+  }, []);
+
+  const isTestCaseActive = (index: number) =>
+    viewMode === 'testCase' && selectedTest === index;
 
   return (
     <div className="app">
@@ -110,127 +203,65 @@ function App() {
       <div className="app-container">
         <aside className="sidebar">
           <h2>Test Cases</h2>
-          
+
           <div className="test-list">
             {testCases.map((test, index) => (
               <button
                 key={index}
-                className={`test-button ${selectedTest === index && !useCustom && !showStressTest && !showIntegration && !showDebug && !showStreamingTest && !showMultiChart ? 'active' : ''}`}
-                onClick={() => {
-                  clearSampleSelection();
-                  setSelectedTest(index);
-                  setUseCustom(false);
-                  setShowStressTest(false);
-                  setShowIntegration(false);
-                  setShowDebug(false);
-                  setShowStreamingTest(false);
-                  setShowMultiChart(false);
-                }}
+                className={`test-button ${isTestCaseActive(index) ? 'active' : ''}`}
+                onClick={() => dispatch({ type: 'SELECT_TEST', index })}
               >
                 {test.title}
               </button>
             ))}
-            
+
             {inlineTableTestIndex >= 0 && (
               <button
-                className={`test-button inline-table ${selectedTest === inlineTableTestIndex && !useCustom && !showStressTest && !showIntegration && !showDebug && !showStreamingTest && !showMultiChart ? 'active' : ''}`}
-                onClick={() => {
-                  clearSampleSelection();
-                  setSelectedTest(inlineTableTestIndex);
-                  setUseCustom(false);
-                  setShowStressTest(false);
-                  setShowIntegration(false);
-                  setShowDebug(false);
-                  setShowStreamingTest(false);
-                  setShowMultiChart(false);
-                }}
+                className={`test-button inline-table ${isTestCaseActive(inlineTableTestIndex) ? 'active' : ''}`}
+                onClick={() => dispatch({ type: 'SELECT_TEST', index: inlineTableTestIndex })}
               >
                 🧪 LLM Inline Table
               </button>
             )}
-            
+
             <button
-              className={`test-button stress ${showStressTest ? 'active' : ''}`}
-              onClick={() => {
-                clearSampleSelection();
-                setShowStressTest(true);
-                setUseCustom(false);
-                setShowIntegration(false);
-                setShowDebug(false);
-                setShowStreamingTest(false);
-                setShowMultiChart(false);
-              }}
+              className={`test-button stress ${viewMode === 'stressTest' ? 'active' : ''}`}
+              onClick={() => dispatch({ type: 'SET_VIEW_MODE', mode: 'stressTest' })}
             >
               🔥 Stress Test
             </button>
 
             <button
-              className={`test-button custom ${useCustom ? 'active' : ''}`}
-              onClick={() => {
-                clearSampleSelection();
-                activateCustomMode(customContent);
-              }}
+              className={`test-button custom ${viewMode === 'custom' ? 'active' : ''}`}
+              onClick={() => dispatch({ type: 'SET_VIEW_MODE', mode: 'custom' })}
             >
               ✏️ Custom Input
             </button>
 
             <button
-              className={`test-button integration ${showIntegration ? 'active' : ''}`}
-              onClick={() => {
-                clearSampleSelection();
-                setShowIntegration(true);
-                setUseCustom(false);
-                setShowStressTest(false);
-                setShowDebug(false);
-                setShowStreamingTest(false);
-                setShowMultiChart(false);
-              }}
+              className={`test-button integration ${viewMode === 'integration' ? 'active' : ''}`}
+              onClick={() => dispatch({ type: 'SET_VIEW_MODE', mode: 'integration' })}
             >
               💬 Sample Integration
             </button>
 
             <button
-              className={`test-button debug ${showDebug ? 'active' : ''}`}
-              onClick={() => {
-                clearSampleSelection();
-                setShowDebug(true);
-                setShowIntegration(false);
-                setUseCustom(false);
-                setShowStressTest(false);
-                setShowStreamingTest(false);
-                setShowMultiChart(false);
-              }}
+              className={`test-button debug ${viewMode === 'debug' ? 'active' : ''}`}
+              onClick={() => dispatch({ type: 'SET_VIEW_MODE', mode: 'debug' })}
             >
               🔍 Debug Math
             </button>
 
             <button
-              className={`test-button streaming ${showStreamingTest ? 'active' : ''}`}
-              onClick={() => {
-                clearSampleSelection();
-                setShowStreamingTest(true);
-                setShowDebug(false);
-                setShowIntegration(false);
-                setUseCustom(false);
-                setShowStressTest(false);
-                setShowMultiChart(false);
-                setStreamingStage(0);
-              }}
+              className={`test-button streaming ${viewMode === 'streaming' ? 'active' : ''}`}
+              onClick={() => dispatch({ type: 'SET_VIEW_MODE', mode: 'streaming' })}
             >
               📊 Chart Streaming
             </button>
 
             <button
-              className={`test-button multichart ${showMultiChart ? 'active' : ''}`}
-              onClick={() => {
-                clearSampleSelection();
-                setShowMultiChart(true);
-                setShowStreamingTest(false);
-                setShowDebug(false);
-                setShowIntegration(false);
-                setUseCustom(false);
-                setShowStressTest(false);
-              }}
+              className={`test-button multichart ${viewMode === 'multiChart' ? 'active' : ''}`}
+              onClick={() => dispatch({ type: 'SET_VIEW_MODE', mode: 'multiChart' })}
             >
               📈 Multi-Chart Test
             </button>
@@ -242,7 +273,7 @@ function App() {
               <input
                 type="checkbox"
                 checked={disableMath}
-                onChange={(e) => setDisableMath(e.target.checked)}
+                onChange={(e) => dispatch({ type: 'SET_DISABLE_MATH', value: e.target.checked })}
               />
               Disable Math Rendering
             </label>
@@ -250,7 +281,7 @@ function App() {
               <input
                 type="checkbox"
                 checked={showRawOutput}
-                onChange={(e) => setShowRawOutput(e.target.checked)}
+                onChange={(e) => dispatch({ type: 'SET_SHOW_RAW_OUTPUT', value: e.target.checked })}
               />
               Show Raw Output
             </label>
@@ -263,7 +294,7 @@ function App() {
                   name="theme"
                   value="system"
                   checked={themeMode === 'system'}
-                  onChange={() => setThemeMode('system')}
+                  onChange={() => dispatch({ type: 'SET_THEME_MODE', mode: 'system' })}
                 />
                 System
               </label>
@@ -273,7 +304,7 @@ function App() {
                   name="theme"
                   value="light"
                   checked={themeMode === 'light'}
-                  onChange={() => setThemeMode('light')}
+                  onChange={() => dispatch({ type: 'SET_THEME_MODE', mode: 'light' })}
                 />
                 Light
               </label>
@@ -283,7 +314,7 @@ function App() {
                   name="theme"
                   value="dark"
                   checked={themeMode === 'dark'}
-                  onChange={() => setThemeMode('dark')}
+                  onChange={() => dispatch({ type: 'SET_THEME_MODE', mode: 'dark' })}
                 />
                 Dark
               </label>
@@ -299,7 +330,7 @@ function App() {
                   <button
                     key={sample.language}
                     className={`code-sample-button ${selectedSample?.language === sample.language ? 'active' : ''}`}
-                    onClick={() => handleCodeSampleSelect(sample)}
+                    onClick={() => dispatch({ type: 'SELECT_SAMPLE', sample })}
                     type="button"
                   >
                     {sample.language}
@@ -323,11 +354,11 @@ function App() {
         </aside>
 
         <main className="main-content">
-          {showDebug ? (
+          {viewMode === 'debug' ? (
             <DebugMath />
-          ) : showIntegration ? (
+          ) : viewMode === 'integration' ? (
             <SampleIntegration />
-          ) : showStreamingTest ? (
+          ) : viewMode === 'streaming' ? (
             <div className="streaming-test-container">
               <h2>📊 Chart Streaming Simulation</h2>
               <p>This test simulates how charts handle streaming data from an LLM response.</p>
@@ -368,7 +399,7 @@ function App() {
                 </button>
 
                 <button
-                  onClick={() => setStreamingStage(0)}
+                  onClick={() => dispatch({ type: 'SET_STREAMING_STAGE', stage: 0 })}
                   style={{
                     padding: '8px 16px',
                     backgroundColor: '#f59e0b',
@@ -392,23 +423,18 @@ function App() {
                 {isStreaming && <span style={{ marginLeft: '10px', color: '#3b82f6' }}>● Streaming</span>}
               </div>
             </div>
-          ) : showMultiChart ? (
+          ) : viewMode === 'multiChart' ? (
             <div className="test-info">
               <h2>📈 Multiple Charts - Streaming Stress Test</h2>
               <p>Tests rendering multiple charts simultaneously, common in LLM comprehensive analysis.</p>
             </div>
-          ) : useCustom ? (
+          ) : viewMode === 'custom' ? (
             <div className="custom-input-container">
               <h2>Custom Markdown Input</h2>
               <textarea
                 className="custom-input"
                 value={customContent}
-                onChange={(e) => {
-                  if (selectedSample) {
-                    setSelectedSample(null);
-                  }
-                  setCustomContent(e.target.value);
-                }}
+                onChange={(e) => dispatch({ type: 'SET_CUSTOM_CONTENT', content: e.target.value })}
                 placeholder="Enter your markdown here...
 
 Try:
@@ -424,27 +450,27 @@ Try:
             </div>
           ) : (
             <div className="test-info">
-              <h2>{showStressTest ? '🔥 Stress Test' : testCases[selectedTest].title}</h2>
-              {!showStressTest && selectedTestCase?.title === 'LLM Inline Table Response' && (
+              <h2>{viewMode === 'stressTest' ? '🔥 Stress Test' : testCases[selectedTest].title}</h2>
+              {viewMode === 'testCase' && selectedTestCase?.title === 'LLM Inline Table Response' && (
                 <p className="note">
                   This reproduces an LLM response where a table immediately follows punctuation,
                   ensuring our preprocessing still renders the table correctly even when this package
                   is embedded in another application.
                 </p>
               )}
-              {!showStressTest && selectedTestCase?.title === 'Ellipsoid Flattening Math' && (
+              {viewMode === 'testCase' && selectedTestCase?.title === 'Ellipsoid Flattening Math' && (
                 <p className="note">
                   Validates inline math variables like $a$, $b$, and $f$ remain math expressions even
                   when surrounded by prose, matching the regression report.
                 </p>
               )}
-              {showStressTest && (
+              {viewMode === 'stressTest' && (
                 <p className="warning">⚠️ This test contains a large amount of content to test performance</p>
               )}
             </div>
           )}
 
-          {!showIntegration && !showDebug && (
+          {viewMode !== 'integration' && viewMode !== 'debug' && (
             <div className="output-section">
               <div className="output-header">
                 <h3>Rendered Output</h3>
@@ -452,7 +478,7 @@ Try:
                   <span className="badge">Raw: {currentContent.length} chars</span>
                 )}
               </div>
-              
+
               <div className={`rendered-output ${themeMode === 'dark' ? 'dark-mode' : themeMode === 'light' ? 'light-mode' : ''}`}>
                 <MarkdownRenderer
                   content={currentContent}
@@ -476,8 +502,8 @@ Try:
 
       <footer className="app-footer">
         <p>
-          Testing <code>@schmitech/markdown-renderer</code> v0.1.0 | 
-          React {React.version} | 
+          Testing <code>@schmitech/markdown-renderer</code> v0.7.4 |
+          React {React.version} |
           <a href="https://github.com/schmitech/markdown-renderer" target="_blank" rel="noopener noreferrer">
             GitHub
           </a>

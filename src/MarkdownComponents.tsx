@@ -179,7 +179,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
 
       const reactHasBlock = meaningfulChildren.some((child) => {
         if (!React.isValidElement(child)) return false;
-        if (child.props?.['data-block-code'] === 'true') return true;
+        const childProps = child.props as Record<string, unknown> | undefined;
+        if (childProps?.['data-block-code'] === 'true') return true;
 
         if (typeof child.type === 'string') {
           return BLOCK_LEVEL_TAGS.has(child.type);

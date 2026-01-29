@@ -151,6 +151,7 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ code }) => {
   const [bindFunctions, setBindFunctions] = useState<((element: Element) => void) | null>(null);
   const [showErrorDetails, setShowErrorDetails] = useState(false);
   const [theme, setTheme] = useState<MermaidTheme>('light');
+  const lastThemeRef = useRef<MermaidTheme>('light');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -171,7 +172,11 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ code }) => {
 
     const updateTheme = () => {
       const next = readTheme();
-      setTheme((current) => (current === next ? current : next));
+      // Only update if theme actually changed to prevent re-render loops
+      if (next !== lastThemeRef.current) {
+        lastThemeRef.current = next;
+        setTheme(next);
+      }
     };
 
     updateTheme();
@@ -189,24 +194,12 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ code }) => {
     }
 
     const handleMediaChange = () => updateTheme();
-    if (prefersDarkQuery) {
-      if (prefersDarkQuery.addEventListener) {
-        prefersDarkQuery.addEventListener('change', handleMediaChange);
-      } else if (prefersDarkQuery.addListener) {
-        prefersDarkQuery.addListener(handleMediaChange);
-      }
-    }
+    prefersDarkQuery?.addEventListener('change', handleMediaChange);
 
     return () => {
       observer.disconnect();
       docObserver?.disconnect();
-      if (prefersDarkQuery) {
-        if (prefersDarkQuery.removeEventListener) {
-          prefersDarkQuery.removeEventListener('change', handleMediaChange);
-        } else if (prefersDarkQuery.removeListener) {
-          prefersDarkQuery.removeListener(handleMediaChange);
-        }
-      }
+      prefersDarkQuery?.removeEventListener('change', handleMediaChange);
     };
   }, []);
 
